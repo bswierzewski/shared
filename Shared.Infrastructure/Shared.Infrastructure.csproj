@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\Shared.Application\Shared.Application.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Title>Shared Infrastructure Layer</Title>
+    <Description>A comprehensive .NET infrastructure layer library providing implementations for external concerns like data access, caching, messaging, and third-party integrations for Clean Architecture applications.</Description>
+    <PackageTags>$(PackageTags);infrastructure;entity-framework;caching;messaging;external-services</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
+
+</Project>
