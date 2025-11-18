@@ -1,4 +1,4 @@
-namespace SharedTools;
+namespace Shared.Tools;
 
 class Program
 {
