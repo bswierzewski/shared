@@ -2,7 +2,6 @@ using dotenv.net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Modules;
-using Shared.Infrastructure.Extensions;
 using Shared.Infrastructure.Modules;
 
 // Load .env file
@@ -24,24 +23,14 @@ Console.WriteLine($"USERS:MODULE:ENABLED = {configuration["USERS:MODULE:ENABLED"
 Console.WriteLine($"users:module:enabled = {configuration["users:module:enabled"] ?? "not set"}");
 Console.WriteLine();
 
-// Load module assemblies based on configuration
-Console.WriteLine("Loading modules...");
-var assemblies = ModuleLoader.LoadAssemblies(configuration);
-var modules = ModuleLoader.LoadModules(assemblies, configuration);
-
-Console.WriteLine($"Found {modules.Count} module(s):");
-foreach (var module in modules)
-{
-    Console.WriteLine($"  - {module.Name}");
-}
-Console.WriteLine();
-
 // Build service collection
 var services = new ServiceCollection();
 services.AddSingleton<IConfiguration>(configuration);
 
-// Add shared infrastructure (registers all modules, MediatR, validators, etc.)
-services.AddSharedInfrastructure(configuration, modules);
+// Add modules infrastructure (loads, registers, and configures all modules)
+Console.WriteLine("Loading and registering modules...");
+
+services.AddModules(configuration);
 
 // Build service provider
 var serviceProvider = services.BuildServiceProvider();

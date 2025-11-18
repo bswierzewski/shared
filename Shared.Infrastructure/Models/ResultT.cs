@@ -1,4 +1,4 @@
-namespace Shared.Abstractions.Models;
+namespace Shared.Infrastructure.Models;
 
 /// <summary>
 /// Represents the result of an operation that can either succeed with a value or fail with errors.

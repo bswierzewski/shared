@@ -1,4 +1,4 @@
-namespace Shared.Abstractions.Models;
+namespace Shared.Infrastructure.Models;
 
 /// <summary>
 /// Represents a paginated list of items with metadata about the pagination.

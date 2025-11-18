@@ -1,6 +1,6 @@
-using Shared.Abstractions.Models;
+using Shared.Infrastructure.Models;
 
-namespace Shared.Abstractions.Extensions;
+namespace Shared.Infrastructure.Extensions;
 
 /// <summary>
 /// Extension methods for IEnumerable to provide additional functionality for collections.

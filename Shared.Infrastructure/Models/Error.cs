@@ -1,4 +1,4 @@
-namespace Shared.Abstractions.Models;
+namespace Shared.Infrastructure.Models;
 
 /// <summary>
 /// Represents an error with a code and descriptive message.
@@ -32,6 +32,6 @@ public sealed record Error(string Code, string Message)
     /// Returns a string representation of the error.
     /// </summary>
     /// <returns>A formatted string containing the error code and message.</returns>
-    public override string ToString() => 
+    public override string ToString() =>
         string.IsNullOrEmpty(Code) ? Message : $"{Code}: {Message}";
 }
