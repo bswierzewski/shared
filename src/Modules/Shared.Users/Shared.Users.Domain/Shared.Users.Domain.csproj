@@ -13,8 +13,8 @@
     <Version>1.0.0</Version>
     <Title>Shared Users Module</Title>
     <Description>User management module with role-based access control (RBAC), JWT authentication, and just-in-time provisioning capabilities.</Description>
-    <Authors>Your Organization</Authors>
-    <Company>Your Organization</Company>
+    <Authors>bswierzewski</Authors>
+    <Company>bswierzewski</Company>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -25,6 +25,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared.Abstractions\Shared.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>

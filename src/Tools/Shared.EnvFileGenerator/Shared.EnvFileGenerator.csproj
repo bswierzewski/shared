@@ -18,8 +18,8 @@
     <Version>1.0.0</Version>
     <Title>Shared EnvFileGenerator</Title>
     <Description>CLI utility for generating .env files from IOptions implementations in Shared projects.</Description>
-    <Authors>Your Organization</Authors>
-    <Company>Your Organization</Company>
+    <Authors>bswierzewski</Authors>
+    <Company>bswierzewski</Company>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -34,6 +34,10 @@
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>

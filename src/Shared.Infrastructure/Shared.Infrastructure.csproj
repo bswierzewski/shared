@@ -13,8 +13,8 @@
     <Version>1.0.0</Version>
     <Title>Shared Infrastructure Layer</Title>
     <Description>A comprehensive .NET infrastructure layer library providing implementations for external concerns like data access, caching, messaging, and third-party integrations for Clean Architecture applications.</Description>
-    <Authors>Your Organization</Authors>
-    <Company>Your Organization</Company>
+    <Authors>bswierzewski</Authors>
+    <Company>bswierzewski</Company>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -39,6 +39,10 @@
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>

@@ -13,8 +13,8 @@
     <Version>1.0.0</Version>
     <Title>Shared Abstractions Layer</Title>
     <Description>A comprehensive .NET domain layer library providing essential building blocks for Domain-Driven Design (DDD) and Clean Architecture applications.</Description>
-    <Authors>Your Organization</Authors>
-    <Company>Your Organization</Company>
+    <Authors>bswierzewski</Authors>
+    <Company>bswierzewski</Company>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -28,6 +28,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>
