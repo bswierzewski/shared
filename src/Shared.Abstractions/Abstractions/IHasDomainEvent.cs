@@ -1,10 +1,10 @@
 namespace Shared.Abstractions.Abstractions;
 
 /// <summary>
-/// Marker interface for aggregate root entities in Domain-Driven Design.
-/// Aggregate roots are the only entities that can be referenced from outside the aggregate boundary.
+/// Defines behavior for entities that manage domain events.
+/// This interface is used for entities that track and publish domain events.
 /// </summary>
-public interface IAggregateRoot
+public interface IHasDomainEvent
 {
     /// <summary>
     /// Gets the read-only collection of domain events
