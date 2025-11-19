@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: tag_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build all projects
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run all tests
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Pack Shared.Abstractions
+        run: dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=${{ steps.tag_version.outputs.VERSION }} src/Shared.Abstractions
+
+      - name: Pack Shared.Infrastructure
+        run: dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=${{ steps.tag_version.outputs.VERSION }} src/Shared.Infrastructure
+
+      - name: Pack Shared.Users.Domain
+        run: dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=${{ steps.tag_version.outputs.VERSION }} src/Modules/Shared.Users/Shared.Users.Domain
+
+      - name: Pack Shared.EnvFileGenerator
+        run: dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=${{ steps.tag_version.outputs.VERSION }} src/Tools/Shared.EnvFileGenerator
+
+      - name: Publish all packages to GitHub Packages
+        run: dotnet nuget push ./nupkg/*.nupkg --source https://nuget.pkg.github.com/bswierzewski/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.tag_version.outputs.VERSION }}
+          body: |
+            ## Packages Published
+            - Shared.Abstractions v${{ steps.tag_version.outputs.VERSION }}
+            - Shared.Infrastructure v${{ steps.tag_version.outputs.VERSION }}
+            - Shared.Users v${{ steps.tag_version.outputs.VERSION }}
+            - Shared.EnvFileGenerator v${{ steps.tag_version.outputs.VERSION }}
+
+            Published to GitHub Packages:
+            https://github.com/bswierzewski/shared/packages
+          draft: false
+          prerelease: false
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-packages-${{ steps.tag_version.outputs.VERSION }}
+          path: ./nupkg/
+          retention-days: 90
