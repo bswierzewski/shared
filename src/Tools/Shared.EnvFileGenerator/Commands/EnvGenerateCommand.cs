@@ -17,39 +17,45 @@ public static class EnvGenerateCommand
     {
         var command = new Command("generate", "Generate .env file from IOptions implementations");
 
-        var pathOption = new Option<string>("--path", "Path to the project to scan (scans bin folder)")
+        var pathOption = new Option<string>("--path")
         {
             Aliases = { "-p" },
+            Description = "Path to the project to scan (scans bin folder)",
             DefaultValueFactory = _ => "."
         };
 
-        var outputOption = new Option<string>("--output", "Output .env file path")
+        var outputOption = new Option<string>("--output")
         {
             Aliases = { "-o" },
+            Description = "Output .env file path",
             DefaultValueFactory = _ => ".env.example"
         };
 
-        var recursiveOption = new Option<bool>("--recursive", "Recursively scan referenced assemblies")
+        var recursiveOption = new Option<bool>("--recursive")
         {
             Aliases = { "-r" },
+            Description = "Recursively scan referenced assemblies",
             DefaultValueFactory = _ => true
         };
 
-        var includeDescriptionsOption = new Option<bool>("--descriptions", "Include descriptions as comments in the output")
+        var includeDescriptionsOption = new Option<bool>("--descriptions")
         {
             Aliases = { "-d" },
+            Description = "Include descriptions as comments in the output",
             DefaultValueFactory = _ => true
         };
 
-        var overwriteOption = new Option<bool>("--force", "Overwrite existing file without prompting")
+        var overwriteOption = new Option<bool>("--force")
         {
             Aliases = { "-f" },
+            Description = "Overwrite existing file without prompting",
             DefaultValueFactory = _ => false
         };
 
-        var configurationOption = new Option<string>("--config", "Build configuration (Debug|Release)")
+        var configurationOption = new Option<string>("--config")
         {
             Aliases = { "-c" },
+            Description = "Build configuration (Debug|Release)",
             DefaultValueFactory = _ => "Debug"
         };
 
