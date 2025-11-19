@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Global Tool Configuration -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>shared-tools</ToolCommandName>
+
+    <!-- NuGet Metadata -->
+    <PackageId>Shared.EnvFileGenerator</PackageId>
+    <Version>1.0.0</Version>
+    <Title>Shared EnvFileGenerator</Title>
+    <Description>CLI utility for generating .env files from IOptions implementations in Shared projects.</Description>
+    <Authors>Your Organization</Authors>
+    <Company>Your Organization</Company>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>cli;tools;utilities;configuration;environment;dotnet-tool</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Abstractions\Shared.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+</Project>
