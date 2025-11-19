@@ -19,39 +19,39 @@ public static class EnvGenerateCommand
 
         var pathOption = new Option<string>("--path", "Path to the project to scan (scans bin folder)")
         {
+            Aliases = { "-p" },
             DefaultValueFactory = _ => "."
         };
-        pathOption.Aliases.Add("-p");
 
         var outputOption = new Option<string>("--output", "Output .env file path")
         {
+            Aliases = { "-o" },
             DefaultValueFactory = _ => ".env.example"
         };
-        outputOption.Aliases.Add("-o");
 
         var recursiveOption = new Option<bool>("--recursive", "Recursively scan referenced assemblies")
         {
+            Aliases = { "-r" },
             DefaultValueFactory = _ => true
         };
-        recursiveOption.Aliases.Add("-r");
 
         var includeDescriptionsOption = new Option<bool>("--descriptions", "Include descriptions as comments in the output")
         {
+            Aliases = { "-d" },
             DefaultValueFactory = _ => true
         };
-        includeDescriptionsOption.Aliases.Add("-d");
 
         var overwriteOption = new Option<bool>("--force", "Overwrite existing file without prompting")
         {
+            Aliases = { "-f" },
             DefaultValueFactory = _ => false
         };
-        overwriteOption.Aliases.Add("-f");
 
         var configurationOption = new Option<string>("--config", "Build configuration (Debug|Release)")
         {
+            Aliases = { "-c" },
             DefaultValueFactory = _ => "Debug"
         };
-        configurationOption.Aliases.Add("-c");
 
         command.Add(pathOption);
         command.Add(outputOption);
