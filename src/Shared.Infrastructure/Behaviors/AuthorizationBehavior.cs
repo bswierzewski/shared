@@ -1,5 +1,5 @@
 using MediatR;
-using Shared.Abstractions.Security;
+using Shared.Abstractions.Authorization;
 using Shared.Infrastructure.Exceptions;
 using Microsoft.Extensions.Logging;
 using System.Reflection;

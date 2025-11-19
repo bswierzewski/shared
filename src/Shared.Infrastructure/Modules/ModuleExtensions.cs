@@ -44,7 +44,7 @@ public static class ModuleExtensions
         services.AddDomainEventDispatchInterceptor();
 
         // Register services from each module
-        RegisterModules(services, modules);
+        RegisterModules(services, modules, configuration);
 
         return services;
     }
@@ -82,15 +82,17 @@ public static class ModuleExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="modules">The list of modules to register.</param>
+    /// <param name="configuration">The application configuration.</param>
     /// <returns>The service collection for chaining.</returns>
     private static IServiceCollection RegisterModules(
         this IServiceCollection services,
-        IList<IModule> modules)
+        IList<IModule> modules,
+        IConfiguration configuration)
     {
         foreach (var module in modules)
         {
             Console.WriteLine($"Registering module '{module.Name}'...");
-            module.Register(services);
+            module.Register(services, configuration);
         }
 
         return services;
@@ -118,7 +120,7 @@ public static class ModuleExtensions
         // Configure middleware for each module
         foreach (var module in modules)
         {
-            module.Use(app);
+            module.Use(app, configuration);
         }
 
         return app;

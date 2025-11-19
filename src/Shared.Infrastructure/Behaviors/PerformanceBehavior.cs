@@ -1,5 +1,5 @@
 using MediatR;
-using Shared.Abstractions.Security;
+using Shared.Abstractions.Authorization;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 

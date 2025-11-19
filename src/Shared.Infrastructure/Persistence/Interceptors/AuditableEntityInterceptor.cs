@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Shared.Abstractions.Abstractions;
-using Shared.Abstractions.Security;
+using Shared.Abstractions.Authorization;
 
 namespace Shared.Infrastructure.Persistence.Interceptors;
 
