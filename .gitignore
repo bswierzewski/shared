@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Ignore claude AI local settings
+.claude
+bash.exe.stackdump
+
 # User-specific files
 *.rsuser
 *.suo
