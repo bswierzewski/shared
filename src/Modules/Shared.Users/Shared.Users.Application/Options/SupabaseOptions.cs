@@ -11,7 +11,7 @@ public class SupabaseOptions : IOptions
     /// <summary>
     /// The configuration section name for Supabase options.
     /// </summary>
-    public static string SectionName => "Authentication:Providers:Supabase";
+    public static string SectionName => "Authentication__Providers__Supabase";
 
     /// <summary>
     /// The Supabase project URL (e.g., https://your-project.supabase.co).

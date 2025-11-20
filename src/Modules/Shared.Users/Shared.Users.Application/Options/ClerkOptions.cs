@@ -11,7 +11,7 @@ public class ClerkOptions : IOptions
     /// <summary>
     /// The configuration section name for Clerk options.
     /// </summary>
-    public static string SectionName => "Authentication:Providers:Clerk";
+    public static string SectionName => "Authentication__Providers__Clerk";
 
     /// <summary>
     /// The authority URL for Clerk (e.g., https://your-domain.clerk.accounts.dev).

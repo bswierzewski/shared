@@ -8,9 +8,9 @@ namespace Shared.Users.Infrastructure.Options;
 /// Used to configure database connection and Entity Framework Core settings.
 ///
 /// Configuration section in appsettings.json should contain:
-/// - Users:Database:ConnectionString (required)
-/// - Users:Database:EnableDetailedErrors (optional, default: false)
-/// - Users:Database:EnableSensitiveDataLogging (optional, default: false)
+/// - Users__Database__ConnectionString (required)
+/// - Users__Database__EnableDetailedErrors (optional, default: false)
+/// - Users__Database__EnableSensitiveDataLogging (optional, default: false)
 ///
 /// Usage in module registration:
 /// services.Configure&lt;DbContextOptions&gt;(
@@ -20,9 +20,9 @@ public class DbContextOptions : IOptions
 {
     /// <summary>
     /// Configuration section name for binding this options class.
-    /// Value: "Users:Database"
+    /// Value: "Users__Database"
     /// </summary>
-    public static string SectionName { get; } = "Users:Database";
+    public static string SectionName { get; } = "Users__Database";
 
     /// <summary>
     /// Gets or sets the PostgreSQL connection string for the Users database.
