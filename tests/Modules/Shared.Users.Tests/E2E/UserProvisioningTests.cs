@@ -1,0 +1,217 @@
+using System.Net;
+using Shared.Infrastructure.Tests.Extensions;
+using Shared.Users.Infrastructure.Persistence;
+using Shared.Users.Domain.Enums;
+
+namespace Shared.Users.Tests.E2E;
+
+/// <summary>
+/// E2E tests for Just-In-Time (JIT) user provisioning.
+/// Tests the flow where users are automatically created or updated when they authenticate
+/// with a new external provider or for the first time.
+/// </summary>
+[Collection("Users Web Application Factory Collection")]
+public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTestBase(factory)
+{
+    /// <summary>
+    /// Tests that a new user is automatically provisioned (created) when they authenticate for the first time.
+    /// The JitProvisioningMiddleware calls UserProvisioningService.UpsertUserAsync() which creates the user.
+    /// </summary>
+    [Fact]
+    public async Task NewUser_ShouldBeProvisionedAutomatically()
+    {
+        // Arrange
+        var email = "newuser@example.com";
+        var token = GenerateToken(email);
+        Client.WithBearerToken(token);
+
+        // Act - Call any endpoint that requires authentication
+        var response = await Client.GetAsync("/api/users");
+
+        // Assert - Endpoint should succeed (or return 401 if no GetAll, but user is provisioned)
+        // The important part is that JIT provisioning happens in the middleware
+        var userExists = await UserExistsAsync(email);
+        userExists.Should().BeTrue();
+
+        // Verify user was created with correct data
+        var user = await GetUserFromDbAsync(email);
+        user.Email.Should().Be(email);
+        user.IsActive.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Tests that when an existing user authenticates again, they are not duplicated.
+    /// The user should be found by external provider ID and updated, not created new.
+    /// </summary>
+    [Fact]
+    public async Task ExistingUser_ShouldNotBeDuplicated()
+    {
+        // Arrange - Provision user on first request
+        var email = "existing@example.com";
+        var externalUserId = "ext-123";
+
+        var token1 = GenerateToken(email, externalUserId, "First Name");
+        Client.WithBearerToken(token1);
+
+        // Act - First request
+        await Client.GetAsync("/api/users");
+        var firstUser = await GetUserFromDbAsync(email);
+        var firstUserId = firstUser.Id;
+
+        // Arrange - Second request with same email and external ID
+        var token2 = GenerateToken(email, externalUserId, "Updated Name");
+        Client.WithBearerToken(token2);
+
+        // Act - Second request
+        await Client.GetAsync("/api/users");
+
+        // Assert - Same user should be updated, not duplicated
+        var secondUser = await GetUserFromDbAsync(email);
+        secondUser.Id.Should().Be(firstUserId);
+
+        // Verify only one user with this email exists
+        var db = Resolve<UsersDbContext>();
+        var allWithEmail = await db.Users
+            .Where(u => u.Email == email)
+            .ToListAsync();
+        allWithEmail.Should().HaveCount(1);
+    }
+
+    /// <summary>
+    /// Tests that a user's profile is updated when they authenticate with updated claims.
+    /// Display name should be updated from the token.
+    /// </summary>
+    [Fact]
+    public async Task ExistingUser_DisplayNameShouldBeUpdated()
+    {
+        // Arrange - Create user with initial name
+        var email = "update@example.com";
+        var token1 = GenerateToken(email, displayName: "Old Name");
+        Client.WithBearerToken(token1);
+        await Client.GetAsync("/api/users");
+
+        var user1 = await GetUserFromDbAsync(email);
+        user1.DisplayName.Should().Be("Old Name");
+
+        // Act - Authenticate with updated display name
+        var token2 = GenerateToken(email, displayName: "New Name");
+        Client.WithBearerToken(token2);
+        await Client.GetAsync("/api/users");
+
+        // Assert - Display name should be updated
+        var user2 = await GetUserFromDbAsync(email);
+        user2.DisplayName.Should().Be("New Name");
+    }
+
+    /// <summary>
+    /// Tests that expired tokens are still processed for JIT provisioning.
+    /// Test auth disables lifetime validation, so expired tokens should work.
+    /// </summary>
+    [Fact]
+    public async Task ExpiredToken_ShouldStillProvisionUser()
+    {
+        // Arrange - Create token with expiry in the past
+        var email = "expired@example.com";
+        var token = new Authentication.JwtTokenBuilder()
+            .WithEmail(email)
+            .WithSubject(Guid.NewGuid().ToString())
+            .WithExpiration(DateTime.UtcNow.AddHours(-1)) // Expired 1 hour ago
+            .Build();
+
+        Client.WithBearerToken(token);
+
+        // Act - Make authenticated request with expired token
+        await Client.GetAsync("/api/users");
+
+        // Assert - User should still be provisioned despite expired token
+        var userExists = await UserExistsAsync(email);
+        userExists.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Tests that multiple external providers can be linked to the same user.
+    /// When a user authenticates with a different provider but same email, they should be linked.
+    /// </summary>
+    [Fact]
+    public async Task SameEmail_DifferentProvider_ShouldLinkProviders()
+    {
+        // Arrange - Create user with first provider
+        var email = "multiauth@example.com";
+        var supabaseId = "supabase-123";
+
+        var token1 = GenerateToken(email, supabaseId);
+        Client.WithBearerToken(token1);
+        await Client.GetAsync("/api/users");
+
+        var user1 = await GetUserFromDbAsync(email);
+        var providers1 = await Resolve<UsersDbContext>()
+            .Users
+            .Where(u => u.Id == user1.Id)
+            .Select(u => u.ExternalProviders)
+            .FirstAsync();
+
+        providers1.Should().HaveCount(1);
+
+        // Act - Authenticate with different external ID (simulating different provider)
+        var clerkId = "clerk-456";
+        var token2 = GenerateToken(email, clerkId);
+        Client.WithBearerToken(token2);
+        await Client.GetAsync("/api/users");
+
+        // Assert - Same user should now have two external providers linked
+        var user2 = await GetUserFromDbAsync(email);
+        user2.Id.Should().Be(user1.Id);
+
+        var providersAfter = await Resolve<UsersDbContext>()
+            .Users
+            .Where(u => u.Id == user2.Id)
+            .Select(u => u.ExternalProviders)
+            .FirstAsync();
+
+        providersAfter.Should().HaveCount(2);
+    }
+
+    /// <summary>
+    /// Tests that users are created as active by default.
+    /// </summary>
+    [Fact]
+    public async Task NewUser_ShouldBeActiveByDefault()
+    {
+        // Arrange
+        var email = "active@example.com";
+        var token = GenerateToken(email);
+        Client.WithBearerToken(token);
+
+        // Act
+        await Client.GetAsync("/api/users");
+
+        // Assert
+        var user = await GetUserFromDbAsync(email);
+        user.IsActive.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Tests that picture URL from token claims is stored in user profile.
+    /// </summary>
+    [Fact]
+    public async Task TokenWithPicture_ShouldStoreProfilePicture()
+    {
+        // Arrange
+        var email = "picture@example.com";
+        var pictureUrl = "https://example.com/avatar.jpg";
+        var token = new Authentication.JwtTokenBuilder()
+            .WithEmail(email)
+            .WithSubject(Guid.NewGuid().ToString())
+            .WithClaim("picture", pictureUrl)
+            .Build();
+
+        Client.WithBearerToken(token);
+
+        // Act
+        await Client.GetAsync("/api/users");
+
+        // Assert
+        var user = await GetUserFromDbAsync(email);
+        user.PictureUrl.Should().Be(pictureUrl);
+    }
+}

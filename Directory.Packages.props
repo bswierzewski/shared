@@ -37,7 +37,8 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
 
     <!-- Security -->
-    <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.14.0" />
+    <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.15.0" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
 
     <!-- Swagger/OpenAPI -->
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.4.0" />

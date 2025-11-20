@@ -6,8 +6,8 @@ using Shared.Users.Infrastructure.Consts;
 namespace Shared.Users.Infrastructure.Services;
 
 /// <summary>
-/// IUser implementation for Users module (when module is enabled).
-/// Reads from enriched ClaimsPrincipal populated by JitProvisioningMiddleware.
+/// IUser implementation that provides access to the current authenticated user's claims.
+/// Reads from the enriched ClaimsPrincipal populated by JitProvisioningMiddleware.
 ///
 /// Flow:
 /// 1. JWT Token arrives
@@ -15,11 +15,11 @@ namespace Shared.Users.Infrastructure.Services;
 /// 3. Middleware adds roles/permissions from DB to ClaimsPrincipal
 /// 4. This service reads from enriched ClaimsPrincipal
 /// </summary>
-internal class UsersModuleIUser : IUser
+internal class CurrentUserService : IUser
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public UsersModuleIUser(IHttpContextAccessor httpContextAccessor)
+    public CurrentUserService(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
     }

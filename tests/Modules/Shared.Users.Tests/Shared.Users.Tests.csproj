@@ -6,12 +6,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <StartupObject>Shared.Users.Tests.TestHostProgram</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Modules\Shared.Users\Shared.Users.Domain\Shared.Users.Domain.csproj" />
     <ProjectReference Include="..\..\..\src\Modules\Shared.Users\Shared.Users.Application\Shared.Users.Application.csproj" />
     <ProjectReference Include="..\..\..\src\Modules\Shared.Users\Shared.Users.Infrastructure\Shared.Users.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\tests\Shared.Infrastructure.Tests\Shared.Infrastructure.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +22,25 @@
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Respawn" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="DotNetEnv" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="FluentAssertions" />
+    <Using Include="Microsoft.EntityFrameworkCore" />
+    <Using Include="Shared.Infrastructure.Tests" />
+    <Using Include="Shared.Users.Tests" />
   </ItemGroup>
 
 </Project>

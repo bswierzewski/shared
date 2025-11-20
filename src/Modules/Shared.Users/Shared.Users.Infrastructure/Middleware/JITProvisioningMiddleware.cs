@@ -53,9 +53,15 @@ public class JITProvisioningMiddleware
         try
         {
             // 1. EXTRACT FROM JWT
-            var email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value;
-            var sub = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var displayName = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value;
+            var email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value
+                ?? claimsPrincipal.FindFirst("email")?.Value;
+
+            var sub = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? claimsPrincipal.FindFirst("sub")?.Value;
+
+            var displayName = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value
+                ?? claimsPrincipal.FindFirst("name")?.Value;
+
             var providerStr = claimsPrincipal.FindFirst(ClaimsConsts.Provider)?.Value;
 
             if (string.IsNullOrEmpty(sub))

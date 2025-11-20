@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Modules;
 using Shared.Abstractions.Authorization;
+using Shared.Infrastructure.Modules;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Application.Options;
 using Shared.Users.Infrastructure.Endpoints;
@@ -81,13 +82,16 @@ public class UsersModule : IModule
         services.AddHttpContextAccessor();
 
         // Register IUser implementation (reads from enriched ClaimsPrincipal)
-        services.AddScoped<IUser, UsersModuleIUser>();
+        services.AddScoped<IUser, CurrentUserService>();
 
         // Register handlers (MediatR)
         services.AddMediatR(config =>
         {
             config.RegisterServicesFromAssembly(typeof(UsersModule).Assembly);
         });
+
+        // Register migration service to automatically apply pending migrations at startup
+        services.AddMigrationService<UsersDbContext>();
 
         // Register HostedService for role/permission synchronization
         services.AddHostedService<RolePermissionSynchronizationService>();

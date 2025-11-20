@@ -8,7 +8,8 @@ on:
       - 'src/Modules/Shared.Users/**'
       - 'src/Shared.Abstractions/**'
       - 'src/Shared.Infrastructure/**'
-      - 'tests/Modules/Users.Tests/**'
+      - 'tests/Modules/Shared.Users.Tests/**'
+      - 'tests/Shared.Infrastructure.Tests/**'
       - 'Directory.Packages.props'
       - '.github/workflows/publish-shared-users.yml'
 
@@ -49,10 +50,10 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Run Users Tests
-        run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Users.Tests
+      - name: Run Shared.Users E2E Tests
+        run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Users.Tests
         env:
-          ConnectionStrings__Users: "Server=localhost;Database=shared_users_test;User Id=postgres;Password=postgres"
+          Users__Database__ConnectionString: "Server=localhost;Database=shared_users_test;User Id=postgres;Password=postgres"
 
       - name: Pack Users Domain
         run: dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=1.0.0-build.${{ github.run_number }} src/Modules/Shared.Users/Shared.Users.Domain
