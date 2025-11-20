@@ -3,9 +3,9 @@
   "isRoot": true,
   "tools": {
     "shared.envfilegenerator": {
-      "version": "1.0.0-build.4",
+      "version": "1.0.0-build.5",
       "commands": [
-        "shared-tools"
+        "shared"
       ],
       "rollForward": false
     }
