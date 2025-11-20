@@ -11,7 +11,7 @@
 
     <!-- Global Tool Configuration -->
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>shared-tools</ToolCommandName>
+    <ToolCommandName>shared</ToolCommandName>
 
     <!-- NuGet Metadata -->
     <PackageId>Shared.EnvFileGenerator</PackageId>

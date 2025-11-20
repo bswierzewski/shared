@@ -1,10 +1,12 @@
-# Shared.Tools
+# Shared CLI - Environment Configuration Tools
 
-A CLI utility toolkit for Shared projects with tools for configuration management, environment setup, and development productivity.
+A CLI utility for managing environment variables and `.env` files in Shared projects. Automatically generate, list, and update `.env` files from `IOptions` implementations.
 
 ## Features
 
-- **Environment Configuration Generation**: Automatically generate `.env` files from `IOptions` implementations
+- **Generate .env Files**: Automatically generate `.env` files from `IOptions` implementations
+- **List Configuration Sections**: Display all available configuration sections with their properties
+- **Update Existing .env**: Merge new configuration with existing .env files while preserving values
 - **Cross-Platform**: Works on Windows, Linux, and macOS
 - **Easy Installation**: Install as a global .NET tool
 
@@ -13,13 +15,13 @@ A CLI utility toolkit for Shared projects with tools for configuration managemen
 Install as a global tool:
 
 ```bash
-dotnet tool install -g Shared.Tools
+dotnet tool install -g Shared.EnvFileGenerator
 ```
 
 Or install locally in a project:
 
 ```bash
-dotnet tool install Shared.Tools
+dotnet tool install Shared.EnvFileGenerator
 ```
 
 ## Usage
@@ -29,7 +31,7 @@ dotnet tool install Shared.Tools
 Scan your project for `IOptions` implementations and generate a `.env.example` file:
 
 ```bash
-shared-tools env generate
+shared env generate
 ```
 
 #### Options
@@ -45,17 +47,88 @@ shared-tools env generate
 
 Generate .env file for current project:
 ```bash
-shared-tools env generate
+shared env generate
 ```
 
 Generate for specific project with Release configuration:
 ```bash
-shared-tools env generate -p ./src/MyApp -c Release -o .env.production
+shared env generate -p ./src/MyApp -c Release -o .env.production
 ```
 
 Generate with custom output path:
 ```bash
-shared-tools env generate -o ./config/.env.local
+shared env generate -o ./config/.env.local
+```
+
+### List Configuration Sections
+
+Display all available configuration sections from `IOptions` implementations:
+
+```bash
+shared env list
+```
+
+#### Options
+
+- `-p, --path <PATH>` - Project path to scan (default: current directory)
+- `-c, --config <CONFIG>` - Build configuration: Debug or Release (default: Debug)
+- `-r, --recursive` - Recursively scan referenced assemblies (default: true)
+- `-v, --verbose` - Show detailed information including all properties
+
+#### Examples
+
+List all configuration sections:
+```bash
+shared env list
+```
+
+List with detailed property information:
+```bash
+shared env list -v
+```
+
+List for Release configuration:
+```bash
+shared env list -c Release
+```
+
+### Update Existing .env File
+
+Update an existing `.env` file with new configuration sections while preserving existing values:
+
+```bash
+shared env update
+```
+
+#### Options
+
+- `-p, --path <PATH>` - Project path to scan (default: current directory)
+- `-e, --env-file <PATH>` - Path to the .env file to update (default: .env)
+- `-c, --config <CONFIG>` - Build configuration: Debug or Release (default: Debug)
+- `-r, --recursive` - Recursively scan referenced assemblies (default: true)
+- `-b, --backup` - Create a backup of the original .env file (default: true)
+- `-d, --descriptions` - Include type descriptions as comments (default: true)
+
+#### Examples
+
+Update .env file with new sections:
+```bash
+shared env update
+```
+
+Update specific .env file:
+```bash
+shared env update -e ./config/.env.local
+```
+
+Update without creating backup:
+```bash
+shared env update -b false
+```
+
+Update for Release configuration:
+```bash
+shared env update -c Release
 ```
 
 ### How It Works
@@ -115,13 +188,13 @@ public class DatabaseOptions : IOptions
 ## Building from Source
 
 ```bash
-dotnet build src/Modules/Shared.Tools/Shared.Tools.csproj
+dotnet build src/Tools/Shared.EnvFileGenerator/Shared.EnvFileGenerator.csproj
 ```
 
 ## Requirements
 
 - .NET 9.0 or later
-- Project must be built before running `env generate` (executables in `bin/Debug` or `bin/Release`)
+- Project must be built before running any command (executables in `bin/Debug` or `bin/Release`)
 
 ## Troubleshooting
 

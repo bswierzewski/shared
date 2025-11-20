@@ -304,4 +304,246 @@ public class EnvFileGenerator
 
         return type.Name;
     }
+
+    /// <summary>
+    /// Lists all available configuration sections from IOptions implementations.
+    /// </summary>
+    /// <param name="projectPath">Path to the project to scan</param>
+    /// <param name="recursive">Whether to scan referenced assemblies</param>
+    /// <param name="verbose">Show detailed information including all properties</param>
+    /// <param name="config">Build configuration (Debug/Release)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public async Task ListSectionsAsync(
+        string projectPath,
+        bool recursive,
+        bool verbose,
+        string config,
+        CancellationToken cancellationToken = default)
+    {
+        // Resolve project path to absolute
+        var absoluteProjectPath = Path.GetFullPath(projectPath);
+        var binFolder = Path.Combine(absoluteProjectPath, "bin", config);
+
+        if (!Directory.Exists(binFolder))
+        {
+            Console.WriteLine($"Error: Build output folder not found: {binFolder}");
+            Console.WriteLine($"Make sure to build the project first: dotnet build");
+            return;
+        }
+
+        Console.WriteLine($"Scanning assemblies in {binFolder}...");
+        await Task.CompletedTask;
+
+        var optionsTypes = new List<Type>();
+        var scannedAssemblies = new HashSet<string>();
+
+        // Find all DLL files in bin folder
+        var dlls = Directory.GetFiles(binFolder, "*.dll", SearchOption.AllDirectories);
+
+        foreach (var dll in dlls)
+        {
+            try
+            {
+                var types = ScanAssembly(dll, recursive, scannedAssemblies);
+                optionsTypes.AddRange(types);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  Warning: Could not load {Path.GetFileName(dll)}: {ex.Message}");
+            }
+        }
+
+        if (optionsTypes.Count == 0)
+        {
+            Console.WriteLine("No IOptions implementations found.");
+            return;
+        }
+
+        Console.WriteLine($"\nFound {optionsTypes.Count} configuration section(s):\n");
+
+        // Deduplicate by full type name
+        var uniqueTypes = optionsTypes
+            .GroupBy(t => t.FullName)
+            .Select(g => g.First())
+            .OrderBy(t => GetSectionName(t))
+            .ToList();
+
+        foreach (var type in uniqueTypes)
+        {
+            var sectionName = GetSectionName(type);
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.CanRead && p.CanWrite)
+                .OrderBy(p => p.Name)
+                .ToList();
+
+            Console.WriteLine($"[{sectionName}]");
+
+            if (verbose)
+            {
+                foreach (var property in properties)
+                {
+                    var envName = GetEnvVariableName(sectionName, property);
+                    var typeName = GetTypeName(property.PropertyType);
+                    Console.WriteLine($"  {envName} ({typeName})");
+                }
+                Console.WriteLine();
+            }
+            else
+            {
+                Console.WriteLine($"  Properties: {properties.Count}");
+                Console.WriteLine();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing .env file with new configuration sections from IOptions implementations.
+    /// Preserves existing values and optionally creates a backup.
+    /// </summary>
+    /// <param name="projectPath">Path to the project to scan</param>
+    /// <param name="envFilePath">Path to the .env file to update</param>
+    /// <param name="recursive">Whether to scan referenced assemblies</param>
+    /// <param name="includeDescriptions">Include descriptions as comments in the output</param>
+    /// <param name="backup">Create a backup of the original .env file</param>
+    /// <param name="config">Build configuration (Debug/Release)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public async Task UpdateAsync(
+        string projectPath,
+        string envFilePath,
+        bool recursive,
+        bool includeDescriptions,
+        bool backup,
+        string config,
+        CancellationToken cancellationToken = default)
+    {
+        // Resolve project path to absolute
+        var absoluteProjectPath = Path.GetFullPath(projectPath);
+        var binFolder = Path.Combine(absoluteProjectPath, "bin", config);
+
+        if (!Directory.Exists(binFolder))
+        {
+            Console.WriteLine($"Error: Build output folder not found: {binFolder}");
+            Console.WriteLine($"Make sure to build the project first: dotnet build");
+            return;
+        }
+
+        // Resolve output path to absolute if relative
+        var absoluteEnvPath = Path.IsPathRooted(envFilePath)
+            ? envFilePath
+            : Path.Combine(absoluteProjectPath, envFilePath);
+
+        Console.WriteLine($"Scanning assemblies in {binFolder}...");
+
+        var optionsTypes = new List<Type>();
+        var scannedAssemblies = new HashSet<string>();
+
+        // Find all DLL files in bin folder
+        var dlls = Directory.GetFiles(binFolder, "*.dll", SearchOption.AllDirectories);
+
+        foreach (var dll in dlls)
+        {
+            try
+            {
+                var types = ScanAssembly(dll, recursive, scannedAssemblies);
+                optionsTypes.AddRange(types);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  Warning: Could not load {Path.GetFileName(dll)}: {ex.Message}");
+            }
+        }
+
+        if (optionsTypes.Count == 0)
+        {
+            Console.WriteLine("No IOptions implementations found.");
+            return;
+        }
+
+        Console.WriteLine($"Found {optionsTypes.Count} configuration section(s).");
+
+        // Read existing .env file if it exists
+        var existingValues = new Dictionary<string, string>();
+        if (File.Exists(absoluteEnvPath))
+        {
+            Console.WriteLine($"Reading existing .env file...");
+            var lines = await File.ReadAllLinesAsync(absoluteEnvPath, cancellationToken);
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#"))
+                    continue;
+
+                var parts = trimmed.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    existingValues[parts[0]] = parts[1];
+                }
+            }
+
+            if (backup)
+            {
+                var backupPath = $"{absoluteEnvPath}.backup";
+                File.Copy(absoluteEnvPath, backupPath, overwrite: true);
+                Console.WriteLine($"Backup created: {backupPath}");
+            }
+        }
+
+        // Generate new content
+        var newContent = GenerateEnvContent(optionsTypes, includeDescriptions);
+
+        // Merge with existing values
+        var mergedContent = MergeEnvContent(newContent, existingValues);
+
+        // Ensure output directory exists
+        var outputDir = Path.GetDirectoryName(absoluteEnvPath);
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir!);
+        }
+
+        await File.WriteAllTextAsync(absoluteEnvPath, mergedContent, cancellationToken);
+
+        Console.WriteLine($"Updated {absoluteEnvPath} successfully.");
+    }
+
+    /// <summary>
+    /// Merges newly generated .env content with existing values.
+    /// Preserves existing values where they exist, adds new entries.
+    /// </summary>
+    private string MergeEnvContent(string newContent, Dictionary<string, string> existingValues)
+    {
+        var sb = new StringBuilder();
+        var lines = newContent.Split(Environment.NewLine);
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+
+            // If it's a comment or empty, keep as is
+            if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#"))
+            {
+                sb.AppendLine(line);
+            }
+            else
+            {
+                // Check if it's an environment variable assignment
+                var parts = trimmed.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    var key = parts[0];
+                    var defaultValue = parts[1];
+
+                    // Use existing value if present, otherwise use the default from generated content
+                    var value = existingValues.ContainsKey(key) ? existingValues[key] : defaultValue;
+                    sb.AppendLine($"{key}={value}");
+                }
+                else
+                {
+                    sb.AppendLine(line);
+                }
+            }
+        }
+
+        return sb.ToString();
+    }
 }
