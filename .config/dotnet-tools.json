@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "shared.envfilegenerator": {
+      "version": "1.0.0-build.4",
+      "commands": [
+        "shared-tools"
+      ],
+      "rollForward": false
+    }
+  }
+}
