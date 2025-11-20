@@ -46,7 +46,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Infrastructure.Tests
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{44444444-5555-6666-7777-888888888888}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Users.Tests", "tests\Modules\Users.Tests\Shared.Users.Tests.csproj", "{A3B4C5D6-E7F8-49A0-F1A2-B3C4D5E6F7A8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Users.Tests", "tests\Modules\Shared.Users.Tests\Shared.Users.Tests.csproj", "{A3B4C5D6-E7F8-49A0-F1A2-B3C4D5E6F7A8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
