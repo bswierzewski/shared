@@ -1,228 +1,151 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shared.Abstractions.Modules;
+using Shared.Users.Application.Abstractions;
 using Shared.Users.Domain.Entities;
-using Shared.Users.Infrastructure.Persistence;
 
 namespace Shared.Users.Infrastructure.Services;
 
 /// <summary>
-/// Background service that synchronizes module-defined roles and permissions with the database.
-/// Runs on application startup to ensure database schema is consistent with module definitions.
-///
-/// Synchronization logic:
-/// 1. For each module's permission/role: Add to DB if not exists
-/// 2. For DB permissions/roles marked as IsModule: Deactivate if no longer defined in modules
-/// 3. Custom (non-module) permissions/roles are never modified
+/// Synchronizes module-defined roles and permissions with the database.
+/// Ensures database state matches the module definitions defined in code.
 /// </summary>
-public class RolePermissionSynchronizationService : IHostedService
+public class RolePermissionSynchronizationService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IModuleRegistry _moduleRegistry;
+    private readonly IReadOnlyCollection<IModule> _modules;
     private readonly ILogger<RolePermissionSynchronizationService> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RolePermissionSynchronizationService"/> class.
+    /// Initializes a new instance of the RolePermissionSynchronizationService.
     /// </summary>
-    /// <param name="serviceProvider">The service provider for creating scopes.</param>
-    /// <param name="moduleRegistry">The module registry to get module permissions and roles.</param>
+    /// <param name="serviceProvider">The service provider for dependency injection.</param>
+    /// <param name="modules">The collection of loaded modules.</param>
     /// <param name="logger">The logger for diagnostic output.</param>
     public RolePermissionSynchronizationService(
         IServiceProvider serviceProvider,
-        IModuleRegistry moduleRegistry,
+        IReadOnlyCollection<IModule> modules,
         ILogger<RolePermissionSynchronizationService> logger)
     {
         _serviceProvider = serviceProvider;
-        _moduleRegistry = moduleRegistry;
+        _modules = modules;
         _logger = logger;
     }
 
     /// <summary>
-    /// Starts the service, which synchronizes roles and permissions on application startup.
+    /// Asynchronously initializes the role and permission synchronization process.
     /// </summary>
-    public async Task StartAsync(CancellationToken cancellationToken)
+    /// <param name="ct">Cancellation token for the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public async Task InitializeAsync(CancellationToken ct = default)
     {
-        _logger.LogInformation("Starting role and permission synchronization...");
+        using var scope = _serviceProvider.CreateScope();
+        var writeDbContext = scope.ServiceProvider.GetRequiredService<IUsersWriteDbContext>();
 
-        try
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+        // Synchronize permissions first (roles depend on them)
+        var databasePermissions = await SyncPermissions(writeDbContext, ct);
 
-            // Synchronize permissions and roles from all modules
-            await SynchronizePermissionsAsync(dbContext, cancellationToken);
-            await SynchronizeRolesAsync(dbContext, cancellationToken);
+        // Synchronize roles with the current permissions
+        await SyncRoles(writeDbContext, databasePermissions, ct);
 
-            _logger.LogInformation("Role and permission synchronization completed successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during role and permission synchronization");
-            throw;
-        }
+        _logger.LogInformation("Permissions and roles synchronized");
     }
 
     /// <summary>
-    /// Stops the service (no-op for this background service).
+    /// Synchronizes permissions from modules with the database.
     /// </summary>
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    /// <summary>
-    /// Synchronizes permissions from all modules with the database.
-    /// </summary>
-    private async Task SynchronizePermissionsAsync(UsersDbContext dbContext, CancellationToken cancellationToken)
+    /// <param name="writeDbContext">The write database context.</param>
+    /// <param name="ct">Cancellation token for the operation.</param>
+    /// <returns>A list of all permissions from the database.</returns>
+    private async Task<List<Permission>> SyncPermissions(IUsersWriteDbContext writeDbContext, CancellationToken ct)
     {
-        _logger.LogInformation("Synchronizing permissions from modules...");
-
-        // Collect all module-defined permissions
-        var modulePermissions = _moduleRegistry.Modules
-            .SelectMany(m => m.Permissions.Select(p => (ModuleName: m.Name, Permission: p)))
+        // Collect module definitions
+        var definitions = _modules
+            .SelectMany(m => m.GetPermissions().Select(p => (ModuleName: m.Name, Definition: p)))
             .ToList();
 
-        var dbPermissions = await dbContext.Permissions.ToListAsync(cancellationToken);
+        // Get database state
+        var databasePermissions = await writeDbContext.Permissions.ToListAsync(ct);
+        var databasePermissionsMap = databasePermissions.ToDictionary(p => p.Name);
 
-        // 1. Add missing module permissions
-        foreach (var (moduleName, permission) in modulePermissions)
+        // Upsert permissions
+        foreach (var (moduleName, definition) in definitions)
         {
-            var existing = dbPermissions.FirstOrDefault(p => p.Name == permission.Name);
-            if (existing == null)
+            if (databasePermissionsMap.TryGetValue(definition.Name, out var existing))
             {
-                var newPermission = Domain.Entities.Permission.Create(
-                    permission.Name,
-                    permission.Description,
-                    isModule: true,
-                    moduleName: moduleName);
-
-                dbContext.Permissions.Add(newPermission);
-                _logger.LogInformation("Added new module permission: {PermissionName} from module '{ModuleName}'",
-                    permission.Name, moduleName);
-            }
-            else if (!existing.IsModule)
-            {
-                // If permission exists but wasn't marked as module permission, mark it now
-                existing.IsModule = true;
-                existing.ModuleName = moduleName;
-                _logger.LogInformation("Marked permission as module permission: {PermissionName} from module '{ModuleName}'",
-                    permission.Name, moduleName);
-            }
-        }
-
-        // 2. Deactivate module permissions that are no longer defined in any module
-        var activeModulePermissions = dbPermissions.Where(p => p.IsModule && p.IsActive).ToList();
-        var modulePermissionNames = modulePermissions.Select(mp => mp.Permission.Name).ToHashSet();
-
-        foreach (var permission in activeModulePermissions)
-        {
-            if (!modulePermissionNames.Contains(permission.Name))
-            {
-                permission.Deactivate();
-                _logger.LogInformation("Deactivated removed module permission: {PermissionName}",
-                    permission.Name);
-            }
-        }
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Synchronizes roles from all modules with the database.
-    /// </summary>
-    private async Task SynchronizeRolesAsync(UsersDbContext dbContext, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Synchronizing roles from modules...");
-
-        // Collect all module-defined roles
-        var moduleRoles = _moduleRegistry.Modules
-            .SelectMany(m => m.Roles.Select(r => (ModuleName: m.Name, Role: r)))
-            .ToList();
-
-        var dbRoles = await dbContext.Roles
-            .Include(r => r.Permissions)
-            .ToListAsync(cancellationToken);
-
-        var dbPermissions = await dbContext.Permissions.ToListAsync(cancellationToken);
-
-        // 1. Add missing module roles and assign their permissions
-        foreach (var (moduleName, moduleRole) in moduleRoles)
-        {
-            var existing = dbRoles.FirstOrDefault(r => r.Name == moduleRole.Name);
-            if (existing == null)
-            {
-                var newRole = Domain.Entities.Role.Create(
-                    moduleRole.Name,
-                    moduleRole.Description,
-                    isModule: true,
-                    moduleName: moduleName);
-
-                // Add permissions to the role
-                foreach (var modulePerm in moduleRole.Permissions)
-                {
-                    var dbPerm = dbPermissions.FirstOrDefault(p => p.Name == modulePerm.Name);
-                    if (dbPerm != null && !newRole.Permissions.Contains(dbPerm))
-                    {
-                        newRole.AddPermission(dbPerm);
-                    }
-                }
-
-                dbContext.Roles.Add(newRole);
-                _logger.LogInformation("Added new module role: {RoleName} from module '{ModuleName}' with {PermissionCount} permissions",
-                    moduleRole.Name, moduleName, moduleRole.Permissions.Count);
+                if (!existing.IsModule)
+                    existing.MarkAsModulePermission(moduleName, definition.Description);
             }
             else
             {
-                // Mark as module role if not already marked
-                if (!existing.IsModule)
-                {
-                    existing.IsModule = true;
-                    existing.ModuleName = moduleName;
-                    _logger.LogInformation("Marked role as module role: {RoleName} from module '{ModuleName}'",
-                        moduleRole.Name, moduleName);
-                }
-
-                // Update permissions for the role (sync with module definition)
-                var modulePermNames = moduleRole.Permissions.Select(p => p.Name).ToHashSet();
-
-                // Remove permissions that are no longer in the module definition
-                var permsToRemove = existing.Permissions
-                    .Where(p => !modulePermNames.Contains(p.Name))
-                    .ToList();
-
-                foreach (var perm in permsToRemove)
-                {
-                    existing.RemovePermission(perm);
-                    _logger.LogDebug("Removed permission {PermissionName} from role {RoleName}",
-                        perm.Name, existing.Name);
-                }
-
-                // Add permissions that are in the module definition but not in the role
-                foreach (var modulePerm in moduleRole.Permissions)
-                {
-                    var dbPerm = dbPermissions.FirstOrDefault(p => p.Name == modulePerm.Name);
-                    if (dbPerm != null && !existing.Permissions.Contains(dbPerm))
-                    {
-                        existing.AddPermission(dbPerm);
-                        _logger.LogDebug("Added permission {PermissionName} to role {RoleName}",
-                            modulePerm.Name, existing.Name);
-                    }
-                }
+                var newPermission = Permission.Create(definition.Name, definition.Description, isModule: true, moduleName: moduleName);
+                writeDbContext.Permissions.Add(newPermission);
+                databasePermissions.Add(newPermission);
             }
         }
 
-        // 2. Deactivate module roles that are no longer defined in any module
-        var activeModuleRoles = dbRoles.Where(r => r.IsModule && r.IsActive).ToList();
-        var moduleRoleNames = moduleRoles.Select(mr => mr.Role.Name).ToHashSet();
+        // Deactivate removed permissions
+        var definitionNames = definitions.Select(x => x.Definition.Name).ToHashSet();
+        foreach (var permission in databasePermissions.Where(p => p.IsModule && p.IsActive && !definitionNames.Contains(p.Name)))
+            permission.Deactivate();
 
-        foreach (var role in activeModuleRoles)
+        await writeDbContext.SaveChangesAsync(ct);
+        return databasePermissions;
+    }
+
+    /// <summary>
+    /// Synchronizes roles from modules with the database.
+    /// </summary>
+    /// <param name="writeDbContext">The write database context.</param>
+    /// <param name="allDatabasePermissions">List of all permissions currently in the database.</param>
+    /// <param name="ct">Cancellation token for the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task SyncRoles(IUsersWriteDbContext writeDbContext, List<Permission> allDatabasePermissions, CancellationToken ct)
+    {
+        // Collect module definitions
+        var definitions = _modules
+            .SelectMany(m => m.GetRoles().Select(r => (ModuleName: m.Name, Definition: r)))
+            .ToList();
+
+        // Include is critical for backing fields
+        var databaseRoles = await writeDbContext.Roles.Include(r => r.Permissions).ToListAsync(ct);
+        var databaseRolesMap = databaseRoles.ToDictionary(r => r.Name);
+        var allDatabasePermissionsMap = allDatabasePermissions.ToDictionary(p => p.Name);
+
+        // Upsert roles
+        foreach (var (moduleName, definition) in definitions)
         {
-            if (!moduleRoleNames.Contains(role.Name))
+            if (!databaseRolesMap.TryGetValue(definition.Name, out var role))
             {
-                role.Deactivate();
-                _logger.LogInformation("Deactivated removed module role: {RoleName}", role.Name);
+                role = Role.Create(definition.Name, definition.Description, isModule: true, moduleName: moduleName);
+                writeDbContext.Roles.Add(role);
+            }
+            else if (!role.IsModule)
+            {
+                role.MarkAsModuleRole(moduleName, definition.Description);
+            }
+
+            // Synchronize role permissions
+            var requiredPermissions = definition.Permissions.Select(p => p.Name).ToHashSet();
+
+            // Remove excessive permissions
+            foreach (var permission in role.Permissions.Where(p => !requiredPermissions.Contains(p.Name)).ToList())
+                role.RemovePermission(permission);
+
+            // Add missing permissions
+            foreach (var permissionName in requiredPermissions)
+            {
+                if (!role.Permissions.Any(p => p.Name == permissionName) && allDatabasePermissionsMap.TryGetValue(permissionName, out var databasePermission))
+                    role.AddPermission(databasePermission);
             }
         }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        // Deactivate removed roles
+        var definitionNames = definitions.Select(x => x.Definition.Name).ToHashSet();
+        foreach (var role in databaseRoles.Where(r => r.IsModule && r.IsActive && !definitionNames.Contains(r.Name)))
+            role.Deactivate();
+
+        await writeDbContext.SaveChangesAsync(ct);
     }
 }

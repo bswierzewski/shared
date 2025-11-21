@@ -6,6 +6,9 @@ namespace Shared.Users.Domain.Entities;
 /// </summary>
 public class Permission
 {
+    private readonly List<Role> _roles = new();
+    private readonly List<Aggregates.User> _users = new();
+
     /// <summary>
     /// Unique permission identifier
     /// </summary>
@@ -25,12 +28,12 @@ public class Permission
     /// <summary>
     /// Roles that have this permission (Many-to-Many relationship)
     /// </summary>
-    public ICollection<Role> Roles { get; private set; } = new List<Role>();
+    public IReadOnlyCollection<Role> Roles => _roles.AsReadOnly();
 
     /// <summary>
     /// Users that have this permission directly granted (Many-to-Many relationship)
     /// </summary>
-    public ICollection<Aggregates.User> Users { get; private set; } = new List<Aggregates.User>();
+    public IReadOnlyCollection<Aggregates.User> Users => _users.AsReadOnly();
 
     /// <summary>
     /// When the permission was created
@@ -40,17 +43,36 @@ public class Permission
     /// <summary>
     /// Whether the permission is active (false = soft deleted)
     /// </summary>
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; private set; } = true;
 
     /// <summary>
     /// Whether this permission is provided by a module (automatically registered)
     /// </summary>
-    public bool IsModule { get; set; } = false;
+    public bool IsModule { get; private set; } = false;
 
     /// <summary>
     /// The name of the module that provides this permission (null if custom)
     /// </summary>
-    public string? ModuleName { get; set; }
+    public string? ModuleName { get; private set; }
+
+    /// <summary>
+    /// Marks this permission as a module-provided permission.
+    /// </summary>
+    /// <param name="moduleName">The name of the module that provides this permission.</param>
+    /// <param name="description">Optional description to update.</param>
+    public void MarkAsModulePermission(string moduleName, string? description = null)
+    {
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new ArgumentException("Module name cannot be empty", nameof(moduleName));
+
+        IsModule = true;
+        ModuleName = moduleName;
+
+        if (description != null && Description != description)
+        {
+            Description = description;
+        }
+    }
 
     private Permission() { }
 

@@ -206,7 +206,7 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
 
         // Act - Grant permission with reason
         var response = await Client.PostJsonAsync(
-            $"/api/users/{user.Id}/permissions/users.manage?reason={System.Web.HttpUtility.UrlEncode(reason)}",
+            $"/api/users/{user.Id}/permissions/users.manage_permissions?reason={System.Web.HttpUtility.UrlEncode(reason)}",
             new { });
 
         // Assert

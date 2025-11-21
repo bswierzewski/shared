@@ -27,8 +27,6 @@ internal class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserD
             .Select(u => new UserDto(
                 u.Id,
                 u.Email,
-                u.DisplayName,
-                u.PictureUrl,
                 u.IsActive,
                 u.LastLoginAt,
                 u.ExternalProviders

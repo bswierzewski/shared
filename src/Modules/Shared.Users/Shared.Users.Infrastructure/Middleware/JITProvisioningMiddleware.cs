@@ -13,6 +13,7 @@ namespace Shared.Users.Infrastructure.Middleware;
 ///
 /// Flow:
 /// 1. Extract JWT claims (email, sub, displayName, provider)
+///    Note: Picture URL comes from the JWT token and is NOT stored in the domain
 /// 2. Call IUserProvisioningService.UpsertUserAsync() for JIT user provisioning
 /// 3. Replace NameIdentifier claim with internal user ID (GUID)
 /// 4. Load user's assigned roles and permissions from database

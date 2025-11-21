@@ -9,7 +9,7 @@ namespace Shared.Users.Infrastructure.Persistence.Configurations;
 /// Represents mapping between internal User ID and external identity provider ID.
 /// Stored in separate table with foreign key to User.
 /// </summary>
-internal class ExternalProviderConfiguration : IEntityTypeConfiguration<ExternalProvider>
+public class ExternalProviderConfiguration : IEntityTypeConfiguration<ExternalProvider>
 {
     /// <summary>
     /// Configures the ExternalProvider entity.

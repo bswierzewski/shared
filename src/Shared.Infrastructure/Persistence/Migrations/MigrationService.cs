@@ -1,29 +1,28 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Shared.Infrastructure.Persistence.Migrations;
 
 /// <summary>
-/// Generic migration service that runs database migrations for a specific DbContext on startup.
+/// Generic migration service that runs database migrations for a specific DbContext.
 /// </summary>
 /// <remarks>
 /// Initializes a new instance of the <see cref="MigrationService{TContext}"/> class.
 /// </remarks>
 /// <param name="serviceProvider">The service provider.</param>
 /// <param name="logger">The logger.</param>
-public class MigrationService<TContext>(IServiceProvider serviceProvider, ILogger<MigrationService<TContext>> logger) : IHostedService
+public class MigrationService<TContext>(IServiceProvider serviceProvider, ILogger<MigrationService<TContext>> logger)
     where TContext : DbContext
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ILogger<MigrationService<TContext>> _logger = logger;
 
     /// <summary>
-    /// Starts the migration service and applies pending migrations.
+    /// Applies pending database migrations.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public async Task MigrateAsync(CancellationToken cancellationToken = default)
     {
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<TContext>();
@@ -53,10 +52,4 @@ public class MigrationService<TContext>(IServiceProvider serviceProvider, ILogge
             throw;
         }
     }
-
-    /// <summary>
-    /// Stops the migration service.
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

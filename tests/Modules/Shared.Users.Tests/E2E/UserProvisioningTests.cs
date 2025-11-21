@@ -78,29 +78,32 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
     }
 
     /// <summary>
-    /// Tests that a user's profile is updated when they authenticate with updated claims.
-    /// Display name should be updated from the token.
+    /// Tests that a user's last login is updated when they authenticate again.
+    /// LastLoginAt should be updated on each authentication.
     /// </summary>
     [Fact]
-    public async Task ExistingUser_DisplayNameShouldBeUpdated()
+    public async Task ExistingUser_LastLoginShouldBeUpdated()
     {
-        // Arrange - Create user with initial name
-        var email = "update@example.com";
-        var token1 = GenerateToken(email, displayName: "Old Name");
+        // Arrange - Create user
+        var email = "login@example.com";
+        var token1 = GenerateToken(email);
         Client.WithBearerToken(token1);
         await Client.GetAsync("/api/users");
 
         var user1 = await GetUserFromDbAsync(email);
-        user1.DisplayName.Should().Be("Old Name");
+        user1.LastLoginAt.Should().NotBeNull();
+        var firstLogin = user1.LastLoginAt!.Value;
 
-        // Act - Authenticate with updated display name
-        var token2 = GenerateToken(email, displayName: "New Name");
+        // Act - Wait a bit and authenticate again
+        await Task.Delay(100);
+        var token2 = GenerateToken(email);
         Client.WithBearerToken(token2);
         await Client.GetAsync("/api/users");
 
-        // Assert - Display name should be updated
+        // Assert - Last login should be updated
         var user2 = await GetUserFromDbAsync(email);
-        user2.DisplayName.Should().Be("New Name");
+        user2.LastLoginAt.Should().NotBeNull();
+        user2.LastLoginAt!.Value.Should().BeAfter(firstLogin);
     }
 
     /// <summary>
@@ -190,28 +193,4 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
         user.IsActive.Should().BeTrue();
     }
 
-    /// <summary>
-    /// Tests that picture URL from token claims is stored in user profile.
-    /// </summary>
-    [Fact]
-    public async Task TokenWithPicture_ShouldStoreProfilePicture()
-    {
-        // Arrange
-        var email = "picture@example.com";
-        var pictureUrl = "https://example.com/avatar.jpg";
-        var token = new Authentication.JwtTokenBuilder()
-            .WithEmail(email)
-            .WithSubject(Guid.NewGuid().ToString())
-            .WithClaim("picture", pictureUrl)
-            .Build();
-
-        Client.WithBearerToken(token);
-
-        // Act
-        await Client.GetAsync("/api/users");
-
-        // Assert
-        var user = await GetUserFromDbAsync(email);
-        user.PictureUrl.Should().Be(pictureUrl);
-    }
 }

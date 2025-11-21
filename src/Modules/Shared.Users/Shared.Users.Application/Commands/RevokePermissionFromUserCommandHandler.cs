@@ -30,8 +30,9 @@ internal class RevokePermissionFromUserCommandHandler : IRequestHandler<RevokePe
         var permission = await _writeContext.Permissions
             .FirstOrDefaultAsync(p => p.Name == request.PermissionName, cancellationToken);
 
+        // If permission doesn't exist, operation is idempotent (no-op)
         if (permission == null)
-            throw new InvalidOperationException($"Permission '{request.PermissionName}' not found");
+            return;
 
         // Revoke permission from user
         user.RevokePermission(permission);

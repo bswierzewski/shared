@@ -17,14 +17,20 @@ public interface IUsersWriteDbContext
     DbSet<User> Users { get; }
 
     /// <summary>
+    /// Gets write access to external providers with change tracking.
+    /// Used when linking new external providers to users.
+    /// </summary>
+    DbSet<ExternalProvider> ExternalProviders { get; }
+
+    /// <summary>
     /// Gets write access to roles with change tracking.
     /// </summary>
-    DbSet<Domain.Entities.Role> Roles { get; }
+    DbSet<Role> Roles { get; }
 
     /// <summary>
     /// Gets write access to permissions with change tracking.
     /// </summary>
-    DbSet<Domain.Entities.Permission> Permissions { get; }
+    DbSet<Permission> Permissions { get; }
 
     /// <summary>
     /// Saves all changes made in this context to the database.

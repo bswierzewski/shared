@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Domain.Aggregates;
-using Shared.Users.Domain.Entities;
 using Shared.Users.Domain.Enums;
+using Shared.Users.Infrastructure.Persistence;
 
 namespace Shared.Users.Infrastructure.Services;
 
@@ -23,9 +23,11 @@ internal class UserProvisioningService : IUserProvisioningService
     /// Creates a new user or updates an existing one (upsert operation).
     /// Flow:
     /// 1. Try to find by external provider ID
-    /// 2. If not found, try to find by email (same email = link new provider)
+    /// 2. If not found, try to find by email (same email = link new provider and update profile)
     /// 3. If not found, create new user (JIT provisioning)
-    /// 4. If found, update profile and last login
+    /// 4. If found by provider, update profile and last login
+    ///
+    /// Note: Picture URL is obtained from the JWT token and is not stored in the domain.
     /// </summary>
     public async Task<User> UpsertUserAsync(
         IdentityProvider provider,
@@ -36,20 +38,27 @@ internal class UserProvisioningService : IUserProvisioningService
     {
         // 1. Try to find by external provider ID
         var user = await _writeContext.Users
+            .Include(u => u.ExternalProviders)
             .FirstOrDefaultAsync(u => u.ExternalProviders
                 .Any(ep => ep.Provider == provider && ep.ExternalUserId == externalUserId),
             cancellationToken);
 
-        // 2. Try to find by email if not found
+        // 2. Try to find by email if not found by provider
         if (user == null && !string.IsNullOrEmpty(email))
         {
             user = await _writeContext.Users
+                .Include(u => u.ExternalProviders)
                 .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
             // Link additional provider if user exists with same email
             if (user != null)
             {
-                user.LinkExternalProvider(provider, externalUserId);
+                var newProvider = user.LinkExternalProvider(provider, externalUserId);
+                // Explicitly add new provider to DbContext so it gets saved
+                if (newProvider != null)
+                {
+                    _writeContext.ExternalProviders.Add(newProvider);
+                }
             }
         }
 
@@ -59,13 +68,13 @@ internal class UserProvisioningService : IUserProvisioningService
             if (string.IsNullOrEmpty(email))
                 throw new InvalidOperationException("Email is required for new user provisioning");
 
-            user = User.ProvisionNew(email, displayName, null, provider, externalUserId);
+            user = User.ProvisionNew(email, provider, externalUserId);
             _writeContext.Users.Add(user);
         }
         else
         {
-            // 4. Update profile for existing user
-            user.UpdateProfile(displayName, null);
+            // 4. Update last login for existing user (found by provider OR by email)
+            user.UpdateLastLogin();
         }
 
         await _writeContext.SaveChangesAsync(cancellationToken);

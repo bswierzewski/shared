@@ -6,8 +6,6 @@ namespace Shared.Users.Application.DTOs;
 public record UserDto(
     Guid Id,
     string Email,
-    string? DisplayName,
-    string? PictureUrl,
     bool IsActive,
     DateTimeOffset? LastLoginAt,
     IReadOnlyCollection<ExternalProviderDto> ExternalProviders,

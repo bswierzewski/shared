@@ -22,6 +22,13 @@ public class UsersWebApplicationFactory : TestWebApplicationFactory<TestHostProg
     protected override Type[] DbContextTypes => [typeof(UsersDbContext)];
 
     /// <summary>
+    /// Tables that should not be reset between tests.
+    /// Roles and Permissions are system/module-defined data that should persist across tests.
+    /// Only test data (users, assignments) are reset.
+    /// </summary>
+    protected override string[] TablesToIgnoreOnReset => ["Roles", "Permissions"];
+
+    /// <summary>
     /// Configures the web host with the correct content root path.
     /// The test host needs to find appsettings files which are in the test project root.
     /// </summary>

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Modules;
@@ -26,12 +25,13 @@ public static class ModuleExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Load modules from assemblies
+        // Load modules from assemblies ONCE
         var assemblies = ModuleLoader.LoadAssemblies(configuration);
         var modules = ModuleLoader.LoadModules(assemblies, configuration);
 
-        // Register module information
-        AddModuleInfo(services, modules);
+        // Register modules collection in DI container (singleton)
+        // This allows UseModules() and InitializeApplicationAsync() to access modules without reloading
+        services.AddSingleton<IReadOnlyCollection<IModule>>(modules.AsReadOnly());
 
         // Add MediatR with behaviors and handlers from all modules
         services.AddMediatRWithBehaviors(modules);
@@ -43,52 +43,6 @@ public static class ModuleExtensions
         services.AddAuditableEntityInterceptor();
         services.AddDomainEventDispatchInterceptor();
 
-        // Register services from each module
-        RegisterModules(services, modules, configuration);
-
-        return services;
-    }
-
-    /// <summary>
-    /// Registers module information and metadata with the service collection.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="modules">The list of loaded modules.</param>
-    /// <returns>The service collection for chaining.</returns>
-    private static IServiceCollection AddModuleInfo(this IServiceCollection services, IList<IModule> modules)
-    {
-        var moduleRegistry = new ModuleRegistry();
-
-        foreach (var module in modules)
-        {
-            var permissions = module.GetPermissions().ToList().AsReadOnly();
-            var roles = module.GetRoles().ToList().AsReadOnly();
-
-            var moduleInfo = new ModuleInfo(
-                module.Name,
-                permissions,
-                roles);
-
-            moduleRegistry.Register(moduleInfo);
-        }
-
-        services.AddSingleton<IModuleRegistry>(moduleRegistry);
-
-        return services;
-    }
-
-    /// <summary>
-    /// Registers services from each module.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="modules">The list of modules to register.</param>
-    /// <param name="configuration">The application configuration.</param>
-    /// <returns>The service collection for chaining.</returns>
-    private static IServiceCollection RegisterModules(
-        this IServiceCollection services,
-        IList<IModule> modules,
-        IConfiguration configuration)
-    {
         foreach (var module in modules)
         {
             Console.WriteLine($"Registering module '{module.Name}'...");
@@ -104,7 +58,8 @@ public static class ModuleExtensions
 
     /// <summary>
     /// Configures the application pipeline for all loaded modules.
-    /// Discovers and invokes the Use method on all registered modules.
+    /// Retrieves modules from the DI container (loaded once during AddModules).
+    /// Invokes the Use method on all registered modules.
     /// </summary>
     /// <param name="app">The application builder.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -113,9 +68,8 @@ public static class ModuleExtensions
         this IApplicationBuilder app,
         IConfiguration configuration)
     {
-        // Load modules from assemblies
-        var assemblies = ModuleLoader.LoadAssemblies(configuration);
-        var modules = ModuleLoader.LoadModules(assemblies, configuration);
+        // Get modules from DI container (already loaded in AddModules)
+        var modules = app.ApplicationServices.GetRequiredService<IReadOnlyCollection<IModule>>();
 
         // Configure middleware for each module
         foreach (var module in modules)
@@ -128,19 +82,28 @@ public static class ModuleExtensions
 
     #endregion
 
-    #region Persistence
+    #region Application Initialization
 
     /// <summary>
-    /// Adds migration service for the specified DbContext.
-    /// Runs on application startup to check for and apply pending migrations.
+    /// Initializes all registered modules.
+    /// Retrieves modules from the DI container (loaded once during AddModules).
+    /// Calls the Initialize method on each module to perform startup tasks like running migrations and seeding data.
     /// </summary>
-    /// <typeparam name="TContext">The DbContext type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddMigrationService<TContext>(this IServiceCollection services)
-        where TContext : DbContext
+    /// <param name="serviceProvider">The service provider.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A task representing the asynchronous initialization operation.</returns>
+    public static async Task InitializeApplicationAsync(
+        this IServiceProvider serviceProvider,
+        CancellationToken cancellationToken = default)
     {
-        return services.AddHostedService<MigrationService<TContext>>();
+        // Get modules from DI container (already loaded in AddModules)
+        var modules = serviceProvider.GetRequiredService<IReadOnlyCollection<IModule>>();
+
+        // Initialize each module
+        foreach (var module in modules)
+        {
+            await module.Initialize(serviceProvider, cancellationToken);
+        }
     }
 
     #endregion

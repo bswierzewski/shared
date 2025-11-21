@@ -8,8 +8,12 @@ namespace Shared.Users.Infrastructure.Persistence.Configurations;
 /// EF Core configuration for Permission entity.
 /// Represents a system-wide permission definition that can be assigned to roles or users directly.
 /// </summary>
-internal class PermissionConfiguration : IEntityTypeConfiguration<Permission>
+public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
 {
+    /// <summary>
+    /// Configures the Permission entity mapping.
+    /// </summary>
+    /// <param name="builder">The entity type builder.</param>
     public void Configure(EntityTypeBuilder<Permission> builder)
     {
         builder.HasKey(p => p.Id);
@@ -47,5 +51,17 @@ internal class PermissionConfiguration : IEntityTypeConfiguration<Permission>
 
         // Index on IsModule for filtering module vs custom permissions
         builder.HasIndex(p => p.IsModule);
+
+        // Many-to-Many: Permission <-> Role
+        builder.HasMany(p => p.Roles)
+            .WithMany(r => r.Permissions)
+            .UsingEntity(
+                "RolePermission",
+                l => l.HasOne(typeof(Role)).WithMany().HasForeignKey("RoleId").OnDelete(DeleteBehavior.Cascade),
+                r => r.HasOne(typeof(Permission)).WithMany().HasForeignKey("PermissionId").OnDelete(DeleteBehavior.Cascade),
+                j => j.HasKey("RoleId", "PermissionId"));
+
+        // Many-to-Many: Permission <-> User (configured via UserPermission join entity)
+        // Note: User.Permissions side is configured in UserConfiguration with PropertyAccessMode.Field
     }
 }

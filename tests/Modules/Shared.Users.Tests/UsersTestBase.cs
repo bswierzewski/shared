@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Shared.Infrastructure.Tests;
-using Shared.Infrastructure.Tests.Extensions;
 using Shared.Users.Infrastructure.Persistence;
 using Shared.Users.Tests.Authentication;
 

@@ -14,6 +14,8 @@ public interface IUserProvisioningService
     /// Creates a new user or updates an existing one (upsert operation).
     /// If the user doesn't exist, creates them with the provided information.
     /// If the user exists, updates their profile and last login timestamp.
+    ///
+    /// Note: Picture URL is obtained from the JWT token and is not stored in the domain.
     /// </summary>
     /// <param name="provider">The identity provider</param>
     /// <param name="externalUserId">The external user ID from the provider (e.g., JWT 'sub' claim)</param>

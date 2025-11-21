@@ -2,14 +2,16 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Shared.Abstractions.Modules;
+using Microsoft.Extensions.Logging;
 using Shared.Abstractions.Authorization;
+using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Modules;
+using Shared.Infrastructure.Persistence.Migrations;
+using Shared.Users.Application;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Application.Options;
 using Shared.Users.Infrastructure.Endpoints;
 using Shared.Users.Infrastructure.Middleware;
-using Shared.Users.Infrastructure.Options;
 using Shared.Users.Infrastructure.Persistence;
 using Shared.Users.Infrastructure.Services;
 
@@ -27,7 +29,7 @@ namespace Shared.Users.Infrastructure;
 /// - Atomic caching with cache stampede prevention
 ///
 /// Integration:
-/// 1. Module is auto-discovered and registered by IModuleRegistry
+/// 1. Module is auto-discovered and loaded in AddModules()
 /// 2. Call app.UseUsersModule() in middleware pipeline (after authentication)
 /// 3. Inject IUser to read authenticated user and their roles/permissions
 /// </summary>
@@ -49,8 +51,7 @@ public class UsersModule : IModule
 
         // Register Supabase authentication options
         // Used by SupabaseJwtBearerExtensions for JWT validation
-        services.Configure<SupabaseOptions>(
-            configuration.GetSection(SupabaseOptions.SectionName));
+        services.Configure<SupabaseOptions>(configuration.GetSection(SupabaseOptions.SectionName));
 
         // Register DbContext with PostgreSQL using configured options
         // Options are injected through IOptions<DbContextOptions>
@@ -84,17 +85,14 @@ public class UsersModule : IModule
         // Register IUser implementation (reads from enriched ClaimsPrincipal)
         services.AddScoped<IUser, CurrentUserService>();
 
-        // Register handlers (MediatR)
+        // Register handlers (MediatR) - scan Application and Infrastructure assemblies
+        // Uses AssemblyMarker classes to identify the correct assemblies
         services.AddMediatR(config =>
         {
-            config.RegisterServicesFromAssembly(typeof(UsersModule).Assembly);
+            config.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
+            config.RegisterServicesFromAssembly(typeof(InfrastructureAssemblyMarker).Assembly);
         });
 
-        // Register migration service to automatically apply pending migrations at startup
-        services.AddMigrationService<UsersDbContext>();
-
-        // Register HostedService for role/permission synchronization
-        services.AddHostedService<RolePermissionSynchronizationService>();
     }
 
     /// <summary>
@@ -112,6 +110,41 @@ public class UsersModule : IModule
         if (app is Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpointRouteBuilder)
         {
             endpointRouteBuilder.MapUserEndpoints();
+        }
+    }
+
+    /// <summary>
+    /// Initializes the Users module by running migrations and synchronizing roles/permissions.
+    /// </summary>
+    public async Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<UsersModule>>();
+
+        try
+        {
+            logger.LogInformation("Starting UsersModule initialization...");
+
+            // Run migrations
+            logger.LogInformation("Running database migrations for UsersModule...");
+            var migrationService = new MigrationService<UsersDbContext>(serviceProvider,
+                scope.ServiceProvider.GetRequiredService<ILogger<MigrationService<UsersDbContext>>>());
+            await migrationService.MigrateAsync(cancellationToken);
+            logger.LogInformation("Database migrations completed successfully");
+
+            // Synchronize roles and permissions
+            logger.LogInformation("Synchronizing roles and permissions...");
+            var syncService = new RolePermissionSynchronizationService(
+                serviceProvider,
+                scope.ServiceProvider.GetRequiredService<IReadOnlyCollection<IModule>>(),
+                scope.ServiceProvider.GetRequiredService<ILogger<RolePermissionSynchronizationService>>());
+            await syncService.InitializeAsync(cancellationToken);
+            logger.LogInformation("UsersModule initialization completed successfully");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during UsersModule initialization");
+            throw;
         }
     }
 
@@ -144,22 +177,19 @@ public class UsersModule : IModule
                 "admin",
                 "Administrator",
                 Name,
-                permissions.AsReadOnly(),
-                "Full administrative access to users module"),
+                permissions.AsReadOnly()),
 
             new Role(
                 "editor",
                 "Editor",
                 Name,
-                permissions.Where(p => p.Name is "users.view" or "users.edit" or "users.assign_roles").ToList().AsReadOnly(),
-                "Can view and manage users"),
+                permissions.Where(p => p.Name is "users.view" or "users.edit" or "users.assign_roles").ToList().AsReadOnly()),
 
             new Role(
                 "viewer",
                 "Viewer",
                 Name,
-                Array.Empty<Permission>().AsReadOnly(),
-                "Can only view users")
+                permissions.Where(p => p.Name is "users.view").ToList().AsReadOnly())
         };
     }
 }

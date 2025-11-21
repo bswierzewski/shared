@@ -47,4 +47,15 @@ public interface IModule
     /// <param name="app">The application builder to configure.</param>
     /// <param name="configuration">The application configuration providing access to settings and options.</param>
     void Use(IApplicationBuilder app, IConfiguration configuration);
+
+    /// <summary>
+    /// Performs initialization tasks for the module before the application starts handling requests.
+    /// This is called after all modules have been registered and configured.
+    /// Use this for tasks like running migrations, seeding data, or synchronizing configuration with the database.
+    /// </summary>
+    /// <param name="serviceProvider">The service provider for resolving dependencies.</param>
+    /// <param name="cancellationToken">Cancellation token for the initialization operation.</param>
+    /// <returns>A task representing the asynchronous initialization operation.</returns>
+    Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
+        => Task.CompletedTask; // Default: no initialization needed
 }

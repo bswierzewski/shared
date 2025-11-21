@@ -6,6 +6,9 @@ namespace Shared.Users.Domain.Entities;
 /// </summary>
 public class Role
 {
+    private readonly List<Permission> _permissions = new();
+    private readonly List<Aggregates.User> _users = new();
+
     /// <summary>
     /// Unique role identifier
     /// </summary>
@@ -24,12 +27,12 @@ public class Role
     /// <summary>
     /// Permissions assigned to this role (Many-to-Many relationship)
     /// </summary>
-    public ICollection<Permission> Permissions { get; private set; } = new List<Permission>();
+    public IReadOnlyCollection<Permission> Permissions => _permissions.AsReadOnly();
 
     /// <summary>
     /// Users assigned this role (Many-to-Many relationship)
     /// </summary>
-    public ICollection<Aggregates.User> Users { get; private set; } = new List<Aggregates.User>();
+    public IReadOnlyCollection<Aggregates.User> Users => _users.AsReadOnly();
 
     /// <summary>
     /// When the role was created
@@ -39,19 +42,38 @@ public class Role
     /// <summary>
     /// Whether the role is active (false = soft deleted)
     /// </summary>
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; private set; } = true;
 
     /// <summary>
     /// Whether this role is provided by a module (automatically registered)
     /// </summary>
-    public bool IsModule { get; set; } = false;
+    public bool IsModule { get; private set; } = false;
 
     /// <summary>
     /// The name of the module that provides this role (null if custom)
     /// </summary>
-    public string? ModuleName { get; set; }
+    public string? ModuleName { get; private set; }
 
     private Role() { }
+
+    /// <summary>
+    /// Marks this role as a module-provided role.
+    /// </summary>
+    /// <param name="moduleName">The name of the module that provides this role.</param>
+    /// <param name="description">Optional description to update.</param>
+    public void MarkAsModuleRole(string moduleName, string? description = null)
+    {
+        if (string.IsNullOrWhiteSpace(moduleName))
+            throw new ArgumentException("Module name cannot be empty", nameof(moduleName));
+
+        IsModule = true;
+        ModuleName = moduleName;
+
+        if (description != null && Description != description)
+        {
+            Description = description;
+        }
+    }
 
     /// <summary>
     /// Create a new role
@@ -81,8 +103,8 @@ public class Role
         if (permission == null)
             throw new ArgumentNullException(nameof(permission));
 
-        if (!Permissions.Contains(permission))
-            Permissions.Add(permission);
+        if (!_permissions.Contains(permission))
+            _permissions.Add(permission);
     }
 
     /// <summary>
@@ -91,7 +113,7 @@ public class Role
     public void RemovePermission(Permission permission)
     {
         if (permission != null)
-            Permissions.Remove(permission);
+            _permissions.Remove(permission);
     }
 
     /// <summary>

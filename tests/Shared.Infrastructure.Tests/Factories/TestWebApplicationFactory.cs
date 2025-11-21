@@ -36,6 +36,13 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
     protected virtual Type[] DbContextTypes => [];
 
     /// <summary>
+    /// Tables that should not be reset when ResetDatabasesAsync is called.
+    /// Override in subclasses to preserve system/reference data across tests.
+    /// Example: return ["Roles", "Permissions"] to keep roles constant during test runs.
+    /// </summary>
+    protected virtual string[] TablesToIgnoreOnReset => [];
+
+    /// <summary>
     /// Initializes the test factory by starting the PostgreSQL container, applying migrations, and configuring the database respawner.
     /// </summary>
     public async Task InitializeAsync()
@@ -60,11 +67,17 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
             }
         }
 
+        // Combine default ignored tables with subclass-specific ones
+        var tablesToIgnore = new[] { "__EFMigrationsHistory" }
+            .Concat(TablesToIgnoreOnReset)
+            .Select(t => new Respawn.Graph.Table(t))
+            .ToArray();
+
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
             SchemasToInclude = ["public"],
-            TablesToIgnore = ["__EFMigrationsHistory"],
+            TablesToIgnore = tablesToIgnore,
             WithReseed = true
         });
     }

@@ -14,7 +14,7 @@ namespace Shared.Users.Tests;
 /// </summary>
 public class TestHostProgram
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
@@ -40,7 +40,11 @@ public class TestHostProgram
         var configuration = app.Services.GetRequiredService<IConfiguration>();
         app.UseModules(configuration);
 
-        app.Run();
+        // Initialize modules (each module's Initialize method runs migrations, seeds data, etc.)
+        await app.Services.InitializeApplicationAsync();
+
+        // Run the application
+        await app.RunAsync();
     }
 }
 

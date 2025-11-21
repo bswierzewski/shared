@@ -8,8 +8,12 @@ namespace Shared.Users.Infrastructure.Persistence.Configurations;
 /// EF Core configuration for Role entity.
 /// Represents a system-wide role definition with assigned permissions.
 /// </summary>
-internal class RoleConfiguration : IEntityTypeConfiguration<Role>
+public class RoleConfiguration : IEntityTypeConfiguration<Role>
 {
+    /// <summary>
+    /// Configures the Role entity mapping.
+    /// </summary>
+    /// <param name="builder">The entity type builder.</param>
     public void Configure(EntityTypeBuilder<Role> builder)
     {
         builder.HasKey(r => r.Id);
@@ -48,11 +52,8 @@ internal class RoleConfiguration : IEntityTypeConfiguration<Role>
         // Index on IsModule for filtering module vs custom roles
         builder.HasIndex(r => r.IsModule);
 
-        // Many-to-many relationship: Role -> Permissions
-        builder.HasMany(r => r.Permissions)
-            .WithMany(p => p.Roles)
-            .UsingEntity("RolePermission",
-                l => l.HasOne(typeof(Permission)).WithMany().HasForeignKey("PermissionId").OnDelete(DeleteBehavior.Cascade),
-                r => r.HasOne(typeof(Role)).WithMany().HasForeignKey("RoleId").OnDelete(DeleteBehavior.Cascade));
+        // Note: Role <-> User and Role <-> Permission relationships are configured in their respective
+        // configuration classes (UserConfiguration and PermissionConfiguration) and will have
+        // PropertyAccessMode.Field set there
     }
 }
