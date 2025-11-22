@@ -1,13 +1,17 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Shared.Abstractions.Authorization;
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Persistence.Migrations;
 using Shared.Users.Application;
 using Shared.Users.Application.Abstractions;
+using Shared.Users.Application.Options;
 using Shared.Users.Infrastructure.Endpoints;
+using Shared.Users.Infrastructure.Extensions.JwtBearers;
 using Shared.Users.Infrastructure.Middleware;
 using Shared.Users.Infrastructure.Persistence;
 using Shared.Users.Infrastructure.Services;
@@ -85,6 +89,36 @@ public class UsersModule : IModule
 
         // Register IUser implementation (reads from enriched ClaimsPrincipal)
         services.AddScoped<IUser, CurrentUserService>();
+
+        // ==================== AUTOMATIC AUTHENTICATION SETUP ====================
+        // Register authentication options
+        services.Configure<AuthenticationOptions>(configuration.GetSection(AuthenticationOptions.SectionName));
+
+        // Automatically setup authentication based on configured provider
+        var authOptions = new AuthenticationOptions();
+        configuration.GetSection(AuthenticationOptions.SectionName).Bind(authOptions);
+
+        if (authOptions.Provider != AuthenticationProvider.None)
+        {
+            // Setup authentication builder
+            var authBuilder = services.AddAuthentication();
+
+            // Configure based on provider
+            switch (authOptions.Provider)
+            {
+                case AuthenticationProvider.Supabase:
+                    // Configure Supabase JWT Bearer
+                    services.Configure<SupabaseOptions>(configuration.GetSection(SupabaseOptions.SectionName));
+                    authBuilder.AddSupabaseJwtBearer();
+                    break;
+
+                case AuthenticationProvider.Clerk:
+                    // Configure Clerk JWT Bearer
+                    services.Configure<ClerkOptions>(configuration.GetSection(ClerkOptions.SectionName));
+                    authBuilder.AddClerkJwtBearer();
+                    break;
+            }
+        }
     }
 
     /// <summary>
