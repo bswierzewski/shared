@@ -72,7 +72,7 @@ jobs:
         with:
           package-name: "Shared.Abstractions"
           package-type: "nuget"
-          min-versions-to-keep: 5
+          min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"
 
       - name: Delete old Shared.Infrastructure packages
@@ -80,7 +80,7 @@ jobs:
         with:
           package-name: "Shared.Infrastructure"
           package-type: "nuget"
-          min-versions-to-keep: 5
+          min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"
 
       - name: Delete old Shared.EnvFileGenerator packages
@@ -88,7 +88,7 @@ jobs:
         with:
           package-name: "Shared.EnvFileGenerator"
           package-type: "nuget"
-          min-versions-to-keep: 5
+          min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"
 
       - name: Delete old Shared.Users packages
@@ -96,7 +96,7 @@ jobs:
         with:
           package-name: "Shared.Users"
           package-type: "nuget"
-          min-versions-to-keep: 5
+          min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"
 
       - name: Delete old Shared.Infrastructure.Tests packages
@@ -104,7 +104,7 @@ jobs:
         with:
           package-name: "Shared.Infrastructure.Tests"
           package-type: "nuget"
-          min-versions-to-keep: 5
+          min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"
 
       - name: Upload artifacts
