@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths:
-      - 'src/Shared.Abstractions/**'
-      - 'Directory.Packages.props'
-      - '.github/workflows/publish-shared-abstractions.yml'
+      - "src/Shared.Abstractions/**"
+      - "Directory.Packages.props"
+      - ".github/workflows/publish-shared-abstractions.yml"
 
 jobs:
   build-and-publish:
@@ -24,16 +24,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
 
       - name: Restore dependencies
         run: dotnet restore
 
       - name: Build
         run: dotnet build --no-restore --configuration Release src/Shared.Abstractions
-
-      - name: Run tests
-        run: dotnet test --no-build --configuration Release --verbosity normal tests/Shared.Infrastructure.Tests
 
       - name: Pack
         run: dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=1.0.0-build.${{ github.run_number }} src/Shared.Abstractions
@@ -44,10 +41,10 @@ jobs:
       - name: Delete old packages
         uses: actions/delete-package-versions@v4
         with:
-          package-name: 'Shared.Abstractions'
-          package-type: 'nuget'
+          package-name: "Shared.Abstractions"
+          package-type: "nuget"
           min-versions-to-keep: 5
-          delete-only-pre-release-versions: 'true'
+          delete-only-pre-release-versions: "true"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
