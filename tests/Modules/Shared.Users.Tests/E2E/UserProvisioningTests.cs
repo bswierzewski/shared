@@ -1,7 +1,5 @@
-using System.Net;
 using Shared.Infrastructure.Tests.Extensions;
 using Shared.Users.Infrastructure.Persistence;
-using Shared.Users.Domain.Enums;
 
 namespace Shared.Users.Tests.E2E;
 

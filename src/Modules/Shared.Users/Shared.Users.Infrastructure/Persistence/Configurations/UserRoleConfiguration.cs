@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Shared.Users.Domain.Aggregates;
 using Shared.Users.Domain.Entities;
 
 namespace Shared.Users.Infrastructure.Persistence.Configurations;

@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Domain.Aggregates;
 using Shared.Users.Domain.Enums;
-using Shared.Users.Infrastructure.Persistence;
 
 namespace Shared.Users.Infrastructure.Services;
 

@@ -1,5 +1,4 @@
 using Shared.Users.Domain.Aggregates;
-using Shared.Users.Domain.Entities;
 using Shared.Users.Domain.Enums;
 
 namespace Shared.Users.Application.Abstractions;

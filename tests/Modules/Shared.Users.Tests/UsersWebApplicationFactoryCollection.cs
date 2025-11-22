@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Shared.Users.Tests;
 
 /// <summary>

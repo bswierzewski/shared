@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Modules.Internal;
-using Shared.Infrastructure.Persistence.Migrations;
 
 namespace Shared.Infrastructure.Modules;
 

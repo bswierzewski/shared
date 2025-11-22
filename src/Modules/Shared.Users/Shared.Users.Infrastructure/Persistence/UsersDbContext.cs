@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Domain.Aggregates;
 using Shared.Users.Domain.Entities;
