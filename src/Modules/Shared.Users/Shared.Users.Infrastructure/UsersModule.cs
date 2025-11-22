@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Shared.Abstractions.Authorization;
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Modules;
@@ -45,20 +44,27 @@ public class UsersModule : IModule
     /// </summary>
     public void Register(IServiceCollection services, IConfiguration configuration)
     {
-        // Register database options from configuration
-        // Binds "Users:Database" section from appsettings.json to DbContextOptions
-        services.Configure<Options.DbContextOptions>(configuration.GetSection(Options.DbContextOptions.SectionName));
+        // Register HttpContextAccessor (required for IUser implementation to access ClaimsPrincipal)
+        services.AddHttpContextAccessor();
 
-        // Register Supabase authentication options
-        // Used by SupabaseJwtBearerExtensions for JWT validation
-        services.Configure<SupabaseOptions>(configuration.GetSection(SupabaseOptions.SectionName));
+        // Register handlers (MediatR) - scan Application and Infrastructure assemblies
+        // Uses AssemblyMarker classes to identify the correct assemblies
+        services.AddMediatR(config =>
+        {
+            config.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
+            config.RegisterServicesFromAssembly(typeof(InfrastructureAssemblyMarker).Assembly);
+        });
+
+        // Register database options from configuration
+        // Binds "Users__Database" section from appsettings.json to DbContextOptions
+        services.Configure<Options.UserDbContextOptions>(configuration.GetSection(Options.UserDbContextOptions.SectionName));
 
         // Register DbContext with PostgreSQL using configured options
         // Options are injected through IOptions<DbContextOptions>
         services.AddDbContext<UsersDbContext>((sp, dbOptions) =>
         {
             // Get the configured database options from DI
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Options.DbContextOptions>>().Value;
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Options.UserDbContextOptions>>().Value;
 
             // Configure PostgreSQL with connection string
             dbOptions.UseNpgsql(options.ConnectionString)
@@ -79,20 +85,8 @@ public class UsersModule : IModule
         // Register provisioning service
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
 
-        // Register HttpContextAccessor (required for IUser implementation to access ClaimsPrincipal)
-        services.AddHttpContextAccessor();
-
         // Register IUser implementation (reads from enriched ClaimsPrincipal)
         services.AddScoped<IUser, CurrentUserService>();
-
-        // Register handlers (MediatR) - scan Application and Infrastructure assemblies
-        // Uses AssemblyMarker classes to identify the correct assemblies
-        services.AddMediatR(config =>
-        {
-            config.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
-            config.RegisterServicesFromAssembly(typeof(InfrastructureAssemblyMarker).Assembly);
-        });
-
     }
 
     /// <summary>
@@ -118,34 +112,8 @@ public class UsersModule : IModule
     /// </summary>
     public async Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
     {
-        using var scope = serviceProvider.CreateScope();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<UsersModule>>();
-
-        try
-        {
-            logger.LogInformation("Starting UsersModule initialization...");
-
-            // Run migrations
-            logger.LogInformation("Running database migrations for UsersModule...");
-            var migrationService = new MigrationService<UsersDbContext>(serviceProvider,
-                scope.ServiceProvider.GetRequiredService<ILogger<MigrationService<UsersDbContext>>>());
-            await migrationService.MigrateAsync(cancellationToken);
-            logger.LogInformation("Database migrations completed successfully");
-
-            // Synchronize roles and permissions
-            logger.LogInformation("Synchronizing roles and permissions...");
-            var syncService = new RolePermissionSynchronizationService(
-                serviceProvider,
-                scope.ServiceProvider.GetRequiredService<IReadOnlyCollection<IModule>>(),
-                scope.ServiceProvider.GetRequiredService<ILogger<RolePermissionSynchronizationService>>());
-            await syncService.InitializeAsync(cancellationToken);
-            logger.LogInformation("UsersModule initialization completed successfully");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error during UsersModule initialization");
-            throw;
-        }
+        await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
+        await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);
     }
 
     /// <summary>
@@ -153,15 +121,15 @@ public class UsersModule : IModule
     /// </summary>
     public IEnumerable<Permission> GetPermissions()
     {
-        return new[]
-        {
+        return
+        [
             new Permission("users.view", "View users", Name, "View user information"),
             new Permission("users.create", "Create users", Name, "Create new users"),
             new Permission("users.edit", "Edit users", Name, "Edit user profiles"),
             new Permission("users.delete", "Delete users", Name, "Delete users"),
             new Permission("users.assign_roles", "Assign roles", Name, "Assign roles to users"),
             new Permission("users.manage_permissions", "Manage permissions", Name, "Grant/revoke permissions"),
-        };
+        ];
     }
 
     /// <summary>
@@ -171,8 +139,8 @@ public class UsersModule : IModule
     {
         var permissions = GetPermissions().ToList();
 
-        return new[]
-        {
+        return
+        [
             new Role(
                 "admin",
                 "Administrator",
@@ -190,6 +158,6 @@ public class UsersModule : IModule
                 "Viewer",
                 Name,
                 permissions.Where(p => p.Name is "users.view").ToList().AsReadOnly())
-        };
+        ];
     }
 }

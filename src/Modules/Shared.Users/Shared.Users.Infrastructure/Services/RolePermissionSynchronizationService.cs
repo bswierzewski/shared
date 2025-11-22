@@ -21,16 +21,11 @@ public class RolePermissionSynchronizationService
     /// Initializes a new instance of the RolePermissionSynchronizationService.
     /// </summary>
     /// <param name="serviceProvider">The service provider for dependency injection.</param>
-    /// <param name="modules">The collection of loaded modules.</param>
-    /// <param name="logger">The logger for diagnostic output.</param>
-    public RolePermissionSynchronizationService(
-        IServiceProvider serviceProvider,
-        IReadOnlyCollection<IModule> modules,
-        ILogger<RolePermissionSynchronizationService> logger)
+    public RolePermissionSynchronizationService(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        _modules = modules;
-        _logger = logger;
+        _modules = serviceProvider.GetRequiredService<IReadOnlyCollection<IModule>>();
+        _logger = serviceProvider.GetRequiredService<ILogger<RolePermissionSynchronizationService>>();
     }
 
     /// <summary>

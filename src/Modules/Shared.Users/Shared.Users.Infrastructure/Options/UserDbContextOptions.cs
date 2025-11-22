@@ -16,7 +16,7 @@ namespace Shared.Users.Infrastructure.Options;
 /// services.Configure&lt;DbContextOptions&gt;(
 ///     configuration.GetSection(DbContextOptions.SectionName));
 /// </summary>
-public class DbContextOptions : IOptions
+public class UserDbContextOptions : IOptions
 {
     /// <summary>
     /// Configuration section name for binding this options class.

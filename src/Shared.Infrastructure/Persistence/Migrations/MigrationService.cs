@@ -11,12 +11,11 @@ namespace Shared.Infrastructure.Persistence.Migrations;
 /// Initializes a new instance of the <see cref="MigrationService{TContext}"/> class.
 /// </remarks>
 /// <param name="serviceProvider">The service provider.</param>
-/// <param name="logger">The logger.</param>
-public class MigrationService<TContext>(IServiceProvider serviceProvider, ILogger<MigrationService<TContext>> logger)
+public class MigrationService<TContext>(IServiceProvider serviceProvider)
     where TContext : DbContext
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<MigrationService<TContext>> _logger = logger;
+    private readonly ILogger<MigrationService<TContext>> _logger = serviceProvider.GetRequiredService<ILogger<MigrationService<TContext>>>();
 
     /// <summary>
     /// Applies pending database migrations.
