@@ -1,0 +1,115 @@
+name: Publish All Shared Packages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/Shared*/**"
+      - "src/Modules/Shared*/**"
+      - "src/Tools/Shared*/**"
+      - "tests/Shared*/**"
+      - "tests/Modules/Shared*/**"
+      - "Directory.Packages.props"
+      - ".github/workflows/publish-all-shared-packages.yml"
+
+jobs:
+  build-test-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shared_users_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run Shared.Users Tests
+        run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Users.Tests
+        env:
+          Users__Database__ConnectionString: "Server=localhost;Database=shared_users_test;User Id=postgres;Password=postgres"
+
+      - name: Pack all packages
+        run: |
+          VERSION=1.0.0-build.${{ github.run_number }}
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Abstractions
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Infrastructure
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Tools/Shared.EnvFileGenerator
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Domain
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION tests/Shared.Infrastructure.Tests
+
+      - name: Publish to GitHub Packages
+        run: dotnet nuget push ./nupkg/*.nupkg --source https://nuget.pkg.github.com/bswierzewski/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+
+      - name: Delete old Shared.Abstractions packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: "Shared.Abstractions"
+          package-type: "nuget"
+          min-versions-to-keep: 5
+          delete-only-pre-release-versions: "true"
+
+      - name: Delete old Shared.Infrastructure packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: "Shared.Infrastructure"
+          package-type: "nuget"
+          min-versions-to-keep: 5
+          delete-only-pre-release-versions: "true"
+
+      - name: Delete old Shared.EnvFileGenerator packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: "Shared.EnvFileGenerator"
+          package-type: "nuget"
+          min-versions-to-keep: 5
+          delete-only-pre-release-versions: "true"
+
+      - name: Delete old Shared.Users packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: "Shared.Users"
+          package-type: "nuget"
+          min-versions-to-keep: 5
+          delete-only-pre-release-versions: "true"
+
+      - name: Delete old Shared.Infrastructure.Tests packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: "Shared.Infrastructure.Tests"
+          package-type: "nuget"
+          min-versions-to-keep: 5
+          delete-only-pre-release-versions: "true"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-packages-nupkg-${{ github.run_number }}
+          path: ./nupkg/
+          retention-days: 30
