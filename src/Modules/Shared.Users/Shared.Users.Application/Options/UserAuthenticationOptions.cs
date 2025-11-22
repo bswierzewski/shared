@@ -6,7 +6,7 @@ namespace Shared.Users.Application.Options;
 /// Main authentication configuration for the Users module.
 /// Specifies which authentication provider to use (Supabase, Clerk, etc.)
 /// </summary>
-public class AuthenticationOptions : IOptions
+public class UserAuthenticationOptions : IOptions
 {
     /// <summary>
     /// Configuration section name

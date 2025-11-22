@@ -92,11 +92,11 @@ public class UsersModule : IModule
 
         // ==================== AUTOMATIC AUTHENTICATION SETUP ====================
         // Register authentication options
-        services.Configure<AuthenticationOptions>(configuration.GetSection(AuthenticationOptions.SectionName));
+        services.Configure<UserAuthenticationOptions>(configuration.GetSection(UserAuthenticationOptions.SectionName));
 
         // Automatically setup authentication based on configured provider
-        var authOptions = new AuthenticationOptions();
-        configuration.GetSection(AuthenticationOptions.SectionName).Bind(authOptions);
+        var authOptions = new UserAuthenticationOptions();
+        configuration.GetSection(UserAuthenticationOptions.SectionName).Bind(authOptions);
 
         if (authOptions.Provider != AuthenticationProvider.None)
         {
