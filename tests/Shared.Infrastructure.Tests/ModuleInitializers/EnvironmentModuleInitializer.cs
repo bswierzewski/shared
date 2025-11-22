@@ -7,6 +7,10 @@ namespace Shared.Infrastructure.Tests.ModuleInitializers;
 /// Automatically loads environment variables from .env file before any test code executes.
 /// Uses ModuleInitializer to guarantee execution order - runs before any fixtures or tests.
 /// </summary>
+/// <remarks>
+/// CA2255 suppressed: This is intentionally used in a test infrastructure library.
+/// It ensures environment variables are loaded before any consuming test projects run.
+/// </remarks>
 internal static class EnvironmentModuleInitializer
 {
     /// <summary>
@@ -14,6 +18,7 @@ internal static class EnvironmentModuleInitializer
     /// This ensures environment variables are available for test fixtures and tests.
     /// </summary>
     [ModuleInitializer]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2255:The ModuleInitializer attribute should not be used in libraries")]
     public static void Initialize()
     {
         Console.WriteLine($"[{nameof(EnvironmentModuleInitializer)}] Current Directory: {Directory.GetCurrentDirectory()}");
