@@ -33,27 +33,21 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         // Configure relationships
 
-        // One-to-Many: User -> ExternalProvider (separate table)
+        // One-to-Many: User -> ExternalProvider
         builder.HasMany(u => u.ExternalProviders)
             .WithOne()
             .HasForeignKey(ep => ep.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Many-to-Many: User <-> Role (configured via UserRole join entity)
+        // Many-to-Many: User <-> Role (detailed configuration in UserRoleConfiguration)
         builder.HasMany(u => u.Roles)
             .WithMany(r => r.Users)
-            .UsingEntity<UserRole>(
-                l => l.HasOne(ur => ur.Role).WithMany().HasForeignKey(ur => ur.RoleId),
-                r => r.HasOne(ur => ur.User).WithMany().HasForeignKey(ur => ur.UserId),
-                j => j.HasKey(ur => new { ur.UserId, ur.RoleId }));
+            .UsingEntity<UserRole>();
 
-        // Many-to-Many: User <-> Permission (configured via UserPermission join entity)
+        // Many-to-Many: User <-> Permission (detailed configuration in UserPermissionConfiguration)
         builder.HasMany(u => u.Permissions)
             .WithMany(p => p.Users)
-            .UsingEntity<UserPermission>(
-                l => l.HasOne(up => up.Permission).WithMany().HasForeignKey(up => up.PermissionId),
-                r => r.HasOne(up => up.User).WithMany().HasForeignKey(up => up.UserId),
-                j => j.HasKey(up => new { up.UserId, up.PermissionId }));
+            .UsingEntity<UserPermission>();
 
         // Configure EF Core to use backing fields for navigation properties
         // This is crucial for Include() to work with IReadOnlyCollection properties

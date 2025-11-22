@@ -52,8 +52,11 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
         // Index on IsModule for filtering module vs custom roles
         builder.HasIndex(r => r.IsModule);
 
-        // Note: Role <-> User and Role <-> Permission relationships are configured in their respective
-        // configuration classes (UserConfiguration and PermissionConfiguration) and will have
-        // PropertyAccessMode.Field set there
+        // Configure EF Core to use backing fields for navigation properties
+        // This is crucial for Include() to work with IReadOnlyCollection properties
+        // Note: Role <-> User and Role <-> Permission relationships are configured via
+        // UserConfiguration and PermissionConfiguration respectively
+        builder.Navigation(r => r.Users).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(r => r.Permissions).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

@@ -19,19 +19,7 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
         // Configure composite primary key
         builder.HasKey(ur => new { ur.UserId, ur.RoleId });
 
-        // Configure foreign key to User
-        builder.HasOne(ur => ur.User)
-            .WithMany()
-            .HasForeignKey(ur => ur.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure foreign key to Role (maps to Role.Users collection via backing field)
-        builder.HasOne(ur => ur.Role)
-            .WithMany()
-            .HasForeignKey(ur => ur.RoleId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure table name
+        // Configure table name with explicit mapping to match aggregate root configuration
         builder.ToTable("User_Role");
 
         // Add index for performance when querying by RoleId

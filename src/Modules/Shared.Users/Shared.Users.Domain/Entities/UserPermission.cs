@@ -1,5 +1,3 @@
-using Shared.Users.Domain.Aggregates;
-
 namespace Shared.Users.Domain.Entities;
 
 /// <summary>
@@ -14,17 +12,7 @@ public class UserPermission
     public Guid UserId { get; set; }
 
     /// <summary>
-    /// Navigation property to User
-    /// </summary>
-    public User User { get; set; } = null!;
-
-    /// <summary>
     /// Foreign key to Permission
     /// </summary>
     public Guid PermissionId { get; set; }
-
-    /// <summary>
-    /// Navigation property to Permission
-    /// </summary>
-    public Permission Permission { get; set; } = null!;
 }

@@ -12,7 +12,7 @@ using Shared.Users.Infrastructure.Persistence;
 namespace Shared.Users.Infrastructure.Migrations
 {
     [DbContext(typeof(UsersDbContext))]
-    [Migration("20251121072507_InitialCreate")]
+    [Migration("20251122062806_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -25,21 +25,6 @@ namespace Shared.Users.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("RolePermission", b =>
-                {
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("PermissionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("RoleId", "PermissionId");
-
-                    b.HasIndex("PermissionId");
-
-                    b.ToTable("RolePermission");
-                });
-
             modelBuilder.Entity("Shared.Users.Domain.Aggregates.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -51,10 +36,6 @@ namespace Shared.Users.Infrastructure.Migrations
 
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("DisplayName")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -203,6 +184,21 @@ namespace Shared.Users.Infrastructure.Migrations
                     b.ToTable("Roles");
                 });
 
+            modelBuilder.Entity("Shared.Users.Domain.Entities.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("RoleId", "PermissionId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.ToTable("Role_Permission", (string)null);
+                });
+
             modelBuilder.Entity("Shared.Users.Domain.Entities.UserPermission", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -233,7 +229,16 @@ namespace Shared.Users.Infrastructure.Migrations
                     b.ToTable("User_Role", (string)null);
                 });
 
-            modelBuilder.Entity("RolePermission", b =>
+            modelBuilder.Entity("Shared.Users.Domain.Entities.ExternalProvider", b =>
+                {
+                    b.HasOne("Shared.Users.Domain.Aggregates.User", null)
+                        .WithMany("ExternalProviders")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Shared.Users.Domain.Entities.RolePermission", b =>
                 {
                     b.HasOne("Shared.Users.Domain.Entities.Permission", null)
                         .WithMany()
@@ -248,51 +253,34 @@ namespace Shared.Users.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Shared.Users.Domain.Entities.ExternalProvider", b =>
-                {
-                    b.HasOne("Shared.Users.Domain.Aggregates.User", null)
-                        .WithMany("ExternalProviders")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Shared.Users.Domain.Entities.UserPermission", b =>
                 {
-                    b.HasOne("Shared.Users.Domain.Entities.Permission", "Permission")
+                    b.HasOne("Shared.Users.Domain.Entities.Permission", null)
                         .WithMany()
                         .HasForeignKey("PermissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Shared.Users.Domain.Aggregates.User", "User")
+                    b.HasOne("Shared.Users.Domain.Aggregates.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Permission");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Shared.Users.Domain.Entities.UserRole", b =>
                 {
-                    b.HasOne("Shared.Users.Domain.Entities.Role", "Role")
+                    b.HasOne("Shared.Users.Domain.Entities.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Shared.Users.Domain.Aggregates.User", "User")
+                    b.HasOne("Shared.Users.Domain.Aggregates.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Role");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Shared.Users.Domain.Aggregates.User", b =>

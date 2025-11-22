@@ -1,5 +1,3 @@
-using Shared.Users.Domain.Aggregates;
-
 namespace Shared.Users.Domain.Entities;
 
 /// <summary>
@@ -14,17 +12,7 @@ public class UserRole
     public Guid UserId { get; set; }
 
     /// <summary>
-    /// Navigation property to User
-    /// </summary>
-    public User User { get; set; } = null!;
-
-    /// <summary>
     /// Foreign key to Role
     /// </summary>
     public Guid RoleId { get; set; }
-
-    /// <summary>
-    /// Navigation property to Role
-    /// </summary>
-    public Role Role { get; set; } = null!;
 }

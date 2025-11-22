@@ -19,19 +19,7 @@ public class UserPermissionConfiguration : IEntityTypeConfiguration<UserPermissi
         // Configure composite primary key
         builder.HasKey(up => new { up.UserId, up.PermissionId });
 
-        // Configure foreign key to User
-        builder.HasOne(up => up.User)
-            .WithMany()
-            .HasForeignKey(up => up.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure foreign key to Permission
-        builder.HasOne(up => up.Permission)
-            .WithMany()
-            .HasForeignKey(up => up.PermissionId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure table name
+        // Configure table name with explicit mapping to match aggregate root configuration
         builder.ToTable("User_Permission");
 
         // Add index for performance when querying by PermissionId

@@ -52,16 +52,16 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
         // Index on IsModule for filtering module vs custom permissions
         builder.HasIndex(p => p.IsModule);
 
-        // Many-to-Many: Permission <-> Role
+        // Many-to-Many: Permission <-> Role (detailed configuration in RolePermissionConfiguration)
         builder.HasMany(p => p.Roles)
             .WithMany(r => r.Permissions)
-            .UsingEntity(
-                "RolePermission",
-                l => l.HasOne(typeof(Role)).WithMany().HasForeignKey("RoleId").OnDelete(DeleteBehavior.Cascade),
-                r => r.HasOne(typeof(Permission)).WithMany().HasForeignKey("PermissionId").OnDelete(DeleteBehavior.Cascade),
-                j => j.HasKey("RoleId", "PermissionId"));
+            .UsingEntity<RolePermission>();
 
-        // Many-to-Many: Permission <-> User (configured via UserPermission join entity)
-        // Note: User.Permissions side is configured in UserConfiguration with PropertyAccessMode.Field
+        // Note: Permission <-> User relationship is already configured in UserConfiguration
+        // to avoid defining the same relationship from both sides (Single Source of Truth)
+
+        // Configure EF Core to use backing fields for navigation properties
+        // This is crucial for Include() to work with IReadOnlyCollection properties
+        builder.Navigation(p => p.Roles).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
