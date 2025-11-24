@@ -1,6 +1,5 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using Shared.Abstractions.Modules;
 
 namespace Shared.Infrastructure.Modules.Internal;
 
@@ -11,16 +10,17 @@ internal static class ValidationExtensions
 {
     /// <summary>
     /// Registers FluentValidation validators from all module assemblies.
+    /// Automatically scans assemblies marked with IModuleAssembly for validators.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="modules">The list of modules to scan for validators.</param>
     /// <returns>The service collection for chaining.</returns>
     internal static IServiceCollection AddValidatorsFromModules(
-        this IServiceCollection services,
-        IList<IModule> modules)
+        this IServiceCollection services)
     {
-        foreach (var module in modules)
-            services.AddValidatorsFromAssembly(module.GetType().Assembly);
+        var moduleAssemblies = AssemblyScanner.GetModuleAssemblies();
+
+        foreach (var assembly in moduleAssemblies)
+            services.AddValidatorsFromAssembly(assembly);
 
         return services;
     }

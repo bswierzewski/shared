@@ -2,9 +2,12 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Respawn;
+using Shared.Abstractions.Modules;
+using Shared.Infrastructure.Modules;
 using Testcontainers.PostgreSql;
 
 namespace Shared.Infrastructure.Tests.Factories;
@@ -29,11 +32,6 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
     private NpgsqlConnection _connection = null!;
 
     /// <summary>
-    /// DbContext types that need to be migrated. Override in subclasses to specify specific contexts.
-    /// </summary>
-    protected virtual Type[] DbContextTypes => [];
-
-    /// <summary>
     /// Tables that should not be reset when ResetDatabasesAsync is called.
     /// Override in subclasses to preserve system/reference data across tests.
     /// Example: return ["Roles", "Permissions"] to keep roles constant during test runs.
@@ -41,7 +39,8 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
     protected virtual string[] TablesToIgnoreOnReset => [];
 
     /// <summary>
-    /// Initializes the test factory by starting the PostgreSQL container, applying migrations, and configuring the database respawner.
+    /// Initializes the test factory by starting the PostgreSQL container and configuring the database respawner.
+    /// Each module is responsible for its own migrations via the Initialize method in IModule.
     /// </summary>
     public async Task InitializeAsync()
     {
@@ -50,19 +49,10 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
         _connection = new NpgsqlConnection(_container.GetConnectionString());
         await _connection.OpenAsync();
 
+        // Initialize all modules (runs migrations, seeds data, etc.)
         using (var scope = Services.CreateScope())
         {
-            var serviceProvider = scope.ServiceProvider;
-
-            // Migrate all registered DbContext types
-            foreach (var contextType in DbContextTypes)
-            {
-                var dbContext = (DbContext?)serviceProvider.GetService(contextType);
-                if (dbContext != null)
-                {
-                    await dbContext.Database.MigrateAsync();
-                }
-            }
+            await scope.ServiceProvider.InitializeApplicationAsync();
         }
 
         // Combine default ignored tables with subclass-specific ones
@@ -100,19 +90,36 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
 
     /// <summary>
     /// Configures the web host with test-specific settings including the test database connection and data protection.
+    /// Automatically overrides all connection strings to use the test PostgreSQL container.
     /// </summary>
     /// <param name="builder">The web host builder to configure.</param>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
 
+        // Override all connection strings with test container connection
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            var testConnectionString = _container.GetConnectionString();
+
+            // Get all existing connection strings from configuration
+            var connectionStringsSection = context.Configuration.GetSection("ConnectionStrings");
+            var connectionStringKeys = connectionStringsSection.GetChildren()
+                .Select(x => x.Key)
+                .ToArray();
+
+            // Override all discovered connection strings with test container connection
+            var overrides = new Dictionary<string, string?>();
+            foreach (var key in connectionStringKeys)
+            {
+                overrides[$"ConnectionStrings:{key}"] = testConnectionString;
+            }
+
+            config.AddInMemoryCollection(overrides);
+        });
+
         builder.ConfigureServices(services =>
         {
-            var connectionString = _container.GetConnectionString();
-
-            // Configure database contexts - override OnConfigureDbContexts to add specific contexts
-            OnConfigureDbContexts(services, connectionString);
-
             // Use ephemeral (in-memory) Data Protection keys for tests.
             // Keys are generated automatically but not persisted, avoiding file system operations
             // and preventing key ring errors while maintaining encryption functionality.
@@ -122,15 +129,6 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
             // Allow subclasses to configure additional services
             OnConfigureServices(services);
         });
-    }
-
-    /// <summary>
-    /// Override this method to configure specific DbContext instances with the test connection string.
-    /// Example: services.ReplaceDbContext&lt;MyDbContext&gt;(connectionString);
-    /// </summary>
-    protected virtual void OnConfigureDbContexts(IServiceCollection services, string connectionString)
-    {
-        // Base implementation does nothing - subclasses override to configure their contexts
     }
 
     /// <summary>

@@ -1,8 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Shared.Infrastructure.Tests.Extensions;
 using Shared.Infrastructure.Tests.Factories;
-using Shared.Users.Infrastructure.Persistence;
 
 namespace Shared.Users.Tests;
 
@@ -16,11 +13,6 @@ namespace Shared.Users.Tests;
 /// </summary>
 public class UsersWebApplicationFactory : TestWebApplicationFactory<TestHostProgram>
 {
-    /// <summary>
-    /// Registers the DbContext types that need migrations.
-    /// </summary>
-    protected override Type[] DbContextTypes => [typeof(UsersDbContext)];
-
     /// <summary>
     /// Tables that should not be reset between tests.
     /// Roles and Permissions are system/module-defined data that should persist across tests.
@@ -41,26 +33,5 @@ public class UsersWebApplicationFactory : TestWebApplicationFactory<TestHostProg
 
         // Call base implementation to apply other configurations
         base.ConfigureWebHost(builder);
-    }
-
-    /// <summary>
-    /// Configures the test database contexts with the PostgreSQL test connection string.
-    /// Replaces the production DbContext registrations with test ones.
-    /// </summary>
-    /// <param name="services">Service collection to configure</param>
-    /// <param name="connectionString">PostgreSQL test database connection string from Testcontainers</param>
-    protected override void OnConfigureDbContexts(IServiceCollection services, string connectionString)
-    {
-        // Replace UsersDbContext with test database
-        services.ReplaceDbContext<UsersDbContext>(connectionString);
-    }
-
-    /// <summary>
-    /// Optional: Configure additional test services.
-    /// Override to mock external dependencies (email, logging, etc.)
-    /// </summary>
-    protected override void OnConfigureServices(IServiceCollection services)
-    {
-        // Base implementation does nothing - add customizations as needed
     }
 }

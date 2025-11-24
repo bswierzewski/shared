@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Modules;
 using Shared.Users.Tests.Authentication;
 

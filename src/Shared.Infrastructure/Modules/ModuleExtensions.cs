@@ -33,10 +33,16 @@ public static class ModuleExtensions
         services.AddSingleton<IReadOnlyCollection<IModule>>(modules.AsReadOnly());
 
         // Add MediatR with behaviors and handlers from all modules
-        services.AddMediatRWithBehaviors(modules);
+        // Automatically scans assemblies marked with IModuleAssembly
+        services.AddMediatRWithBehaviors();
 
         // Add FluentValidation validators from all modules
-        services.AddValidatorsFromModules(modules);
+        // Automatically scans assemblies marked with IModuleAssembly
+        services.AddValidatorsFromModules();
+
+        // Add module endpoints from all modules
+        // Automatically scans assemblies marked with IModuleAssembly
+        services.AddModuleEndpoints();
 
         // Add EF Core interceptors
         services.AddAuditableEntityInterceptor();
@@ -58,7 +64,7 @@ public static class ModuleExtensions
     /// <summary>
     /// Configures the application pipeline for all loaded modules.
     /// Retrieves modules from the DI container (loaded once during AddModules).
-    /// Invokes the Use method on all registered modules.
+    /// Invokes the Use method on all registered modules, then automatically maps all endpoints.
     /// </summary>
     /// <param name="app">The application builder.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -75,6 +81,9 @@ public static class ModuleExtensions
         {
             module.Use(app, configuration);
         }
+
+        // Automatically map all endpoints from IEndpointMapper implementations
+        app.MapModuleEndpoints();
 
         return app;
     }

@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
@@ -10,26 +9,6 @@ namespace Shared.Infrastructure.Tests.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>
-    /// Replaces an existing DbContext registration with a new one using the specified connection string.
-    /// </summary>
-    /// <typeparam name="TContext">The DbContext type to replace.</typeparam>
-    /// <param name="services">The service collection to modify.</param>
-    /// <param name="connectionString">The PostgreSQL connection string for the test database.</param>
-    /// <returns>The modified service collection for method chaining.</returns>
-    public static IServiceCollection ReplaceDbContext<TContext>(this IServiceCollection services, string connectionString)
-        where TContext : DbContext
-    {
-        services.RemoveAll<DbContextOptions<TContext>>();
-        services.RemoveAll<TContext>();
-
-        services.AddDbContext<TContext>(options =>
-            options.UseNpgsql(connectionString,
-                b => b.MigrationsAssembly(typeof(TContext).Assembly.FullName)));
-
-        return services;
-    }
-
     /// <summary>
     /// Registers a mock instance of a service, replacing any existing registration.
     /// </summary>

@@ -3,14 +3,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Shared.Abstractions.Authorization;
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Persistence.Migrations;
-using Shared.Users.Application;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Application.Options;
-using Shared.Users.Infrastructure.Endpoints;
 using Shared.Users.Infrastructure.Extensions.JwtBearers;
 using Shared.Users.Infrastructure.Middleware;
 using Shared.Users.Infrastructure.Persistence;
@@ -29,9 +26,16 @@ namespace Shared.Users.Infrastructure;
 /// - IUser implementation reading from enriched ClaimsPrincipal
 /// - Atomic caching with cache stampede prevention
 ///
+/// Automatic Registration:
+/// This module uses IModuleAssembly markers (ApplicationAssembly, InfrastructureAssembly) for automatic discovery.
+/// The following are registered automatically by the module infrastructure:
+/// - MediatR handlers from Application and Infrastructure assemblies
+/// - FluentValidation validators from Application and Infrastructure assemblies
+/// - HTTP endpoints via IModuleEndpoints (UserEndpoints class)
+///
 /// Integration:
-/// 1. Module is auto-discovered and loaded in AddModules()
-/// 2. Call app.UseUsersModule() in middleware pipeline (after authentication)
+/// 1. Module is auto-discovered and loaded via AddModules()
+/// 2. Call app.UseModules() in middleware pipeline (after authentication)
 /// 3. Inject IUser to read authenticated user and their roles/permissions
 /// </summary>
 public class UsersModule : IModule
@@ -42,42 +46,33 @@ public class UsersModule : IModule
     public string Name => "users";
 
     /// <summary>
-    /// Register Users module services, DbContext, and command/query handlers
+    /// Registers Users module services, DbContext, and module-specific configuration.
+    ///
+    /// Note: MediatR handlers, validators, and endpoints are registered automatically via IModuleAssembly markers.
+    /// This method only registers module-specific services (DbContext, authentication, custom services).
     /// </summary>
     public void Register(IServiceCollection services, IConfiguration configuration)
     {
+        // ==================== AUTOMATIC REGISTRATION ====================
+        // The following are automatically registered by the module infrastructure:
+        // - MediatR handlers from Application and Infrastructure assemblies (ApplicationAssembly, InfrastructureAssembly markers)
+        // - FluentValidation validators from Application and Infrastructure assemblies
+        // - HTTP endpoints from UserEndpoints class (implements IModuleEndpoints)
+        //
+        // See: src/Shared.Infrastructure/Modules/ModuleExtensions.cs for automatic registration logic
+        // ================================================================
+
         // Register HttpContextAccessor (required for IUser implementation to access ClaimsPrincipal)
         services.AddHttpContextAccessor();
 
-        // Register handlers (MediatR) - scan Application and Infrastructure assemblies
-        // Uses AssemblyMarker classes to identify the correct assemblies
-        services.AddMediatR(config =>
-        {
-            config.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
-            config.RegisterServicesFromAssembly(typeof(InfrastructureAssemblyMarker).Assembly);
-        });
-
-        // Register database options from configuration
-        // Binds "Users__Database" section from appsettings.json to DbContextOptions
-        services.Configure<Options.UserDbContextOptions>(configuration.GetSection(Options.UserDbContextOptions.SectionName));
-
-        // Register DbContext with PostgreSQL using configured options
-        // Options are injected through IOptions<DbContextOptions>
         services.AddDbContext<UsersDbContext>((sp, dbOptions) =>
         {
-            // Get the configured database options from DI
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Options.UserDbContextOptions>>().Value;
+            var config = sp.GetRequiredService<IConfiguration>();
+            var connectionString = config.GetConnectionString("Users")
+                ?? throw new InvalidOperationException("Connection string 'Users' not found in configuration");
 
-            // Configure PostgreSQL with connection string
-            dbOptions.UseNpgsql(options.ConnectionString)
+            dbOptions.UseNpgsql(connectionString)
                      .AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
-
-            // Configure additional EF Core options if needed
-            if (options.EnableDetailedErrors)
-                dbOptions.EnableDetailedErrors();
-
-            if (options.EnableSensitiveDataLogging)
-                dbOptions.EnableSensitiveDataLogging();
         });
 
         // Register DbContext abstractions
@@ -122,25 +117,25 @@ public class UsersModule : IModule
     }
 
     /// <summary>
-    /// Configure middleware pipeline - adds JIT provisioning and claims enrichment
-    /// Also maps HTTP endpoints for user management operations
+    /// Configures the Users module middleware pipeline.
+    /// Adds JIT provisioning and claims enrichment middleware.
+    ///
+    /// Note: HTTP endpoints are mapped automatically by the module infrastructure via IModuleEndpoints.
+    /// See UserEndpoints class for endpoint definitions.
     /// </summary>
     public void Use(IApplicationBuilder app, IConfiguration configuration)
     {
         // Add middleware for JIT provisioning and claims enrichment
+        // This middleware runs after authentication and enriches the ClaimsPrincipal with user data
         app.UseMiddleware<JITProvisioningMiddleware>();
 
-        // Map user management endpoints
-        // Note: IApplicationBuilder is typically a WebApplication which also implements IEndpointRouteBuilder
-        // This allows us to map endpoints directly without requiring a separate parameter
-        if (app is Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpointRouteBuilder)
-        {
-            endpointRouteBuilder.MapUserEndpoints();
-        }
+        // HTTP endpoints are mapped automatically by ModuleExtensions.UseModules()
+        // See: UserEndpoints class (implements IModuleEndpoints)
     }
 
     /// <summary>
-    /// Initializes the Users module by running migrations and synchronizing roles/permissions.
+    /// Initializes the Users module by running database migrations and synchronizing roles/permissions.
+    /// This method is called automatically during application startup via InitializeApplicationAsync().
     /// </summary>
     public async Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
     {
@@ -149,7 +144,8 @@ public class UsersModule : IModule
     }
 
     /// <summary>
-    /// Define permissions available in this module
+    /// Defines the permissions available in the Users module.
+    /// These permissions are automatically synchronized to the database during module initialization.
     /// </summary>
     public IEnumerable<Permission> GetPermissions()
     {
@@ -165,7 +161,8 @@ public class UsersModule : IModule
     }
 
     /// <summary>
-    /// Define roles available in this module
+    /// Defines the roles available in the Users module.
+    /// These roles are automatically synchronized to the database during module initialization.
     /// </summary>
     public IEnumerable<Role> GetRoles()
     {

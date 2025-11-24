@@ -10,7 +10,9 @@ namespace Shared.Infrastructure.Modules.Internal;
 internal static class MediatRExtensions
 {
     /// <summary>
-    /// Adds MediatR with all pipeline behaviors and registers handlers from all modules.
+    /// Adds MediatR with all pipeline behaviors and registers handlers from all module assemblies.
+    /// Automatically scans assemblies marked with IModuleAssembly for MediatR handlers.
+    ///
     /// Behaviors are added in the following order:
     /// 1. LoggingBehavior - logs request start, completion, and timing
     /// 2. UnhandledExceptionBehavior - catches and logs unhandled exceptions
@@ -19,19 +21,19 @@ internal static class MediatRExtensions
     /// 5. PerformanceBehavior - monitors and logs slow requests
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="modules">The list of modules to scan for handlers.</param>
     /// <returns>The service collection for chaining.</returns>
     internal static IServiceCollection AddMediatRWithBehaviors(
-        this IServiceCollection services,
-        IList<IModule> modules)
+        this IServiceCollection services)
     {
         services.AddMediatR(cfg =>
         {
-            // Register handlers from all module assemblies
-            if (modules.Count > 0)
+            // Register handlers from all assemblies marked with IModuleAssembly
+            var moduleAssemblies = AssemblyScanner.GetModuleAssemblies();
+
+            if (moduleAssemblies.Count > 0)
             {
-                foreach (var module in modules)
-                    cfg.RegisterServicesFromAssembly(module.GetType().Assembly);
+                foreach (var assembly in moduleAssemblies)
+                    cfg.RegisterServicesFromAssembly(assembly);
             }
             else
             {

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Shared.Abstractions.Modules;
 using Shared.Users.Application.Commands;
 using Shared.Users.Application.DTOs;
 using Shared.Users.Application.Queries;
@@ -14,27 +15,31 @@ namespace Shared.Users.Infrastructure.Endpoints;
 /// This class implements the REST API layer for user-related operations including
 /// user retrieval, role management, and direct permission grants.
 /// All endpoints follow the CQRS pattern using MediatR for command and query handling.
+///
+/// This class is automatically discovered and registered via IModuleEndpoints interface.
+/// No manual endpoint mapping is required in the module's Use() method.
 /// </summary>
 /// <remarks>
 /// The Users module handles Just-In-Time user provisioning, role-based access control,
 /// and direct permission grants with support for multiple identity providers.
 /// These endpoints expose operations for administrative interfaces and user information retrieval.
 /// </remarks>
-public static class UserEndpoints
+public class UserEndpoints : IModuleEndpoints
 {
     /// <summary>
     /// Configures and maps all HTTP endpoints for user management operations.
     /// This method establishes the routing structure for the Users API, grouping all user-related
     /// endpoints under the "/api/users" base path with appropriate OpenAPI documentation.
+    ///
+    /// This method is automatically invoked by the module infrastructure during application startup.
     /// </summary>
     /// <param name="endpoints">The endpoint route builder used to configure API routes</param>
-    /// <returns>The configured endpoint route builder for method chaining</returns>
     /// <remarks>
     /// All endpoints are configured with OpenAPI support for automatic API documentation generation.
     /// The "Users" tag groups these endpoints in the Swagger UI for better organization.
     /// Authorization is required for all endpoints - unauthorized requests will return 401.
     /// </remarks>
-    public static IEndpointRouteBuilder MapUserEndpoints(this IEndpointRouteBuilder endpoints)
+    public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         // Create a route group for all user endpoints with consistent base path and tagging
         // This approach ensures API consistency and simplifies routing management
@@ -99,8 +104,6 @@ public static class UserEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
-
-        return endpoints;
     }
 
     /// <summary>
