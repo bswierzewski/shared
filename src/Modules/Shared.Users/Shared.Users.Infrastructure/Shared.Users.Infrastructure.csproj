@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeReferencedProjects>true</IncludeReferencedProjects>
 
     <!-- NuGet Metadata -->
     <PackageId>Shared.Users</PackageId>
