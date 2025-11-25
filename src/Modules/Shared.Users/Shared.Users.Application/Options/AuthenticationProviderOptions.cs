@@ -1,17 +1,18 @@
 using Shared.Abstractions.Options;
+using Shared.Users.Domain;
 
 namespace Shared.Users.Application.Options;
 
 /// <summary>
-/// Main authentication configuration for the Users module.
-/// Specifies which authentication provider to use (Supabase, Clerk, etc.)
+/// Configuration for selecting which authentication provider to use.
+/// Specifies whether to use Supabase, Clerk, or no provider.
 /// </summary>
-public class UserAuthenticationOptions : IOptions
+public class AuthenticationProviderOptions : IOptions
 {
     /// <summary>
     /// Configuration section name
     /// </summary>
-    public static string SectionName => "Authentication";
+    public static string SectionName => $"Modules__{ModuleConstants.ModuleName}__Authentication";
 
     /// <summary>
     /// The active authentication provider

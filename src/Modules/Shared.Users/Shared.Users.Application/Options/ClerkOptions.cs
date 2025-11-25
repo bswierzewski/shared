@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Shared.Abstractions.Options;
+using Shared.Users.Domain;
 
 namespace Shared.Users.Application.Options;
 
@@ -11,7 +12,7 @@ public class ClerkOptions : IOptions
     /// <summary>
     /// The configuration section name for Clerk options.
     /// </summary>
-    public static string SectionName => "Authentication__Providers__Clerk";
+    public static string SectionName => $"Modules__{ModuleConstants.ModuleName}__Authentication__Clerk";
 
     /// <summary>
     /// The authority URL for Clerk (e.g., https://your-domain.clerk.accounts.dev).

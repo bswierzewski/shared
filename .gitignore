@@ -6,6 +6,7 @@
 # Ignore claude AI local settings
 .claude
 bash.exe.stackdump
+nul
 
 # User-specific files
 *.rsuser

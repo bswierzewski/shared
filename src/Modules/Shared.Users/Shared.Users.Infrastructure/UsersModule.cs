@@ -7,10 +7,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Authorization;
 using Shared.Abstractions.Modules;
+using Shared.Infrastructure.Extensions;
 using Shared.Infrastructure.Persistence.Migrations;
 using Shared.Users.Application;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Application.Options;
+using Shared.Users.Domain;
 using Shared.Users.Infrastructure.Endpoints;
 using Shared.Users.Infrastructure.Extensions.JwtBearers;
 using Shared.Users.Infrastructure.Middleware;
@@ -39,7 +41,7 @@ public class UsersModule : IModule
     /// <summary>
     /// Gets the unique name of the Users module
     /// </summary>
-    public string Name => "users";
+    public string Name => ModuleConstants.ModuleName;
 
     /// <summary>
     /// Registers Users module services, DbContext, MediatR handlers, and validators.
@@ -50,12 +52,15 @@ public class UsersModule : IModule
         // Register HttpContextAccessor (required for IUser implementation to access ClaimsPrincipal)
         services.AddHttpContextAccessor();
 
+        // Configure all IOptions from the module based on their SectionName
+        ConfigureOptionsFromConfiguration(services, configuration);
+
         // Register DbContext
         services.AddDbContext<UsersDbContext>((sp, dbOptions) =>
         {
-            var config = sp.GetRequiredService<IConfiguration>();
-            var connectionString = config.GetConnectionString("Users")
-                ?? throw new InvalidOperationException("Connection string 'Users' not found in configuration");
+            var dbContextOptions = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<UsersDbContextOptions>>();
+            var connectionString = dbContextOptions.Value.ConnectionString
+                ?? throw new InvalidOperationException($"Connection string not found in section '{UsersDbContextOptions.SectionName}'");
 
             dbOptions.UseNpgsql(connectionString)
                      .AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
@@ -82,12 +87,8 @@ public class UsersModule : IModule
         services.AddValidatorsFromAssembly(typeof(ApplicationAssembly).Assembly);
         services.AddValidatorsFromAssembly(typeof(InfrastructureAssembly).Assembly);
 
-        // Configure authentication options
-        services.Configure<UserAuthenticationOptions>(configuration.GetSection(UserAuthenticationOptions.SectionName));
-
         // Setup authentication based on configured provider
-        var authOptions = new UserAuthenticationOptions();
-        configuration.GetSection(UserAuthenticationOptions.SectionName).Bind(authOptions);
+        var authOptions = configuration.LoadOptions<AuthenticationProviderOptions>();
 
         if (authOptions.Provider != AuthenticationProvider.None)
         {
@@ -96,12 +97,10 @@ public class UsersModule : IModule
             switch (authOptions.Provider)
             {
                 case AuthenticationProvider.Supabase:
-                    services.Configure<SupabaseOptions>(configuration.GetSection(SupabaseOptions.SectionName));
                     authBuilder.AddSupabaseJwtBearer();
                     break;
 
                 case AuthenticationProvider.Clerk:
-                    services.Configure<ClerkOptions>(configuration.GetSection(ClerkOptions.SectionName));
                     authBuilder.AddClerkJwtBearer();
                     break;
             }
@@ -122,6 +121,22 @@ public class UsersModule : IModule
         {
             endpointRouteBuilder.MapUserEndpoints();
         }
+    }
+
+    /// <summary>
+    /// Configures all IOptions from the configuration based on their SectionName properties.
+    /// </summary>
+    private static void ConfigureOptionsFromConfiguration(IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure DbContext options
+        services.Configure<UsersDbContextOptions>(configuration.GetSection(UsersDbContextOptions.SectionName));
+
+        // Configure authentication provider options
+        services.Configure<AuthenticationProviderOptions>(configuration.GetSection(AuthenticationProviderOptions.SectionName));
+
+        // Configure provider-specific options
+        services.Configure<ClerkOptions>(configuration.GetSection(ClerkOptions.SectionName));
+        services.Configure<SupabaseOptions>(configuration.GetSection(SupabaseOptions.SectionName));
     }
 
     /// <summary>
