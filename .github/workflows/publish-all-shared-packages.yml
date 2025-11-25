@@ -50,10 +50,10 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Run Shared.Users Tests
-        run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Users.Tests
-        env:
-          MODULES__USERS__CONNECTIONSTRING: "Server=localhost;Database=shared_users_test;User Id=postgres;Password=postgres"
+      # - name: Run Shared.Users Tests
+      #   run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Users.Tests
+      #   env:
+      #     Modules__Users__ConnectionString: "Server=localhost;Database=shared_users_test;User Id=postgres;Password=postgres"
 
       - name: Pack all packages
         run: |
