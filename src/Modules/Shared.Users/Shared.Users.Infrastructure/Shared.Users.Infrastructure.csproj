@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <IncludeReferencedProjects>true</IncludeReferencedProjects>
 
     <!-- NuGet Metadata -->
     <PackageId>Shared.Users</PackageId>
@@ -28,8 +27,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shared.Users.Application\Shared.Users.Application.csproj" />
-    <ProjectReference Include="..\Shared.Users.Domain\Shared.Users.Domain.csproj" />
+    <Content Include="..\Shared.Users.Application\bin\$(Configuration)\$(TargetFramework)\Shared.Users.Application.dll" Pack="true" PackagePath="lib/$(TargetFramework)" />
+    <Content Include="..\Shared.Users.Domain\bin\$(Configuration)\$(TargetFramework)\Shared.Users.Domain.dll" Pack="true" PackagePath="lib/$(TargetFramework)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Users.Application\Shared.Users.Application.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Shared.Users.Domain\Shared.Users.Domain.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\..\..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
   </ItemGroup>
 
