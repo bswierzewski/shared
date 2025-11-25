@@ -1,3 +1,5 @@
+using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -6,8 +8,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Authorization;
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Persistence.Migrations;
+using Shared.Users.Application;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Application.Options;
+using Shared.Users.Infrastructure.Endpoints;
 using Shared.Users.Infrastructure.Extensions.JwtBearers;
 using Shared.Users.Infrastructure.Middleware;
 using Shared.Users.Infrastructure.Persistence;
@@ -26,17 +30,9 @@ namespace Shared.Users.Infrastructure;
 /// - IUser implementation reading from enriched ClaimsPrincipal
 /// - Atomic caching with cache stampede prevention
 ///
-/// Automatic Registration:
-/// This module uses IModuleAssembly markers (ApplicationAssembly, InfrastructureAssembly) for automatic discovery.
-/// The following are registered automatically by the module infrastructure:
-/// - MediatR handlers from Application and Infrastructure assemblies
-/// - FluentValidation validators from Application and Infrastructure assemblies
-/// - HTTP endpoints via IModuleEndpoints (UserEndpoints class)
-///
-/// Integration:
-/// 1. Module is auto-discovered and loaded via AddModules()
-/// 2. Call app.UseModules() in middleware pipeline (after authentication)
-/// 3. Inject IUser to read authenticated user and their roles/permissions
+/// This module is responsible for:
+/// - Registering its own services, MediatR handlers, and validators in Register()
+/// - Configuring its own middleware and endpoints in Use()
 /// </summary>
 public class UsersModule : IModule
 {
@@ -46,25 +42,15 @@ public class UsersModule : IModule
     public string Name => "users";
 
     /// <summary>
-    /// Registers Users module services, DbContext, and module-specific configuration.
-    ///
-    /// Note: MediatR handlers, validators, and endpoints are registered automatically via IModuleAssembly markers.
-    /// This method only registers module-specific services (DbContext, authentication, custom services).
+    /// Registers Users module services, DbContext, MediatR handlers, and validators.
+    /// This module is responsible for registering everything it needs.
     /// </summary>
     public void Register(IServiceCollection services, IConfiguration configuration)
     {
-        // ==================== AUTOMATIC REGISTRATION ====================
-        // The following are automatically registered by the module infrastructure:
-        // - MediatR handlers from Application and Infrastructure assemblies (ApplicationAssembly, InfrastructureAssembly markers)
-        // - FluentValidation validators from Application and Infrastructure assemblies
-        // - HTTP endpoints from UserEndpoints class (implements IModuleEndpoints)
-        //
-        // See: src/Shared.Infrastructure/Modules/ModuleExtensions.cs for automatic registration logic
-        // ================================================================
-
         // Register HttpContextAccessor (required for IUser implementation to access ClaimsPrincipal)
         services.AddHttpContextAccessor();
 
+        // Register DbContext
         services.AddDbContext<UsersDbContext>((sp, dbOptions) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
@@ -85,30 +71,36 @@ public class UsersModule : IModule
         // Register IUser implementation (reads from enriched ClaimsPrincipal)
         services.AddScoped<IUser, CurrentUserService>();
 
-        // ==================== AUTOMATIC AUTHENTICATION SETUP ====================
-        // Register authentication options
+        // Register MediatR handlers from Application and Infrastructure assemblies
+        services.AddMediatR(config =>
+        {
+            config.RegisterServicesFromAssembly(typeof(ApplicationAssembly).Assembly);
+            config.RegisterServicesFromAssembly(typeof(InfrastructureAssembly).Assembly);
+        });
+
+        // Register FluentValidation validators from Application and Infrastructure assemblies
+        services.AddValidatorsFromAssembly(typeof(ApplicationAssembly).Assembly);
+        services.AddValidatorsFromAssembly(typeof(InfrastructureAssembly).Assembly);
+
+        // Configure authentication options
         services.Configure<UserAuthenticationOptions>(configuration.GetSection(UserAuthenticationOptions.SectionName));
 
-        // Automatically setup authentication based on configured provider
+        // Setup authentication based on configured provider
         var authOptions = new UserAuthenticationOptions();
         configuration.GetSection(UserAuthenticationOptions.SectionName).Bind(authOptions);
 
         if (authOptions.Provider != AuthenticationProvider.None)
         {
-            // Setup authentication builder
             var authBuilder = services.AddAuthentication();
 
-            // Configure based on provider
             switch (authOptions.Provider)
             {
                 case AuthenticationProvider.Supabase:
-                    // Configure Supabase JWT Bearer
                     services.Configure<SupabaseOptions>(configuration.GetSection(SupabaseOptions.SectionName));
                     authBuilder.AddSupabaseJwtBearer();
                     break;
 
                 case AuthenticationProvider.Clerk:
-                    // Configure Clerk JWT Bearer
                     services.Configure<ClerkOptions>(configuration.GetSection(ClerkOptions.SectionName));
                     authBuilder.AddClerkJwtBearer();
                     break;
@@ -118,29 +110,18 @@ public class UsersModule : IModule
 
     /// <summary>
     /// Configures the Users module middleware pipeline.
-    /// Adds JIT provisioning and claims enrichment middleware.
-    ///
-    /// Note: HTTP endpoints are mapped automatically by the module infrastructure via IModuleEndpoints.
-    /// See UserEndpoints class for endpoint definitions.
+    /// Adds JIT provisioning and claims enrichment middleware, and maps endpoints.
     /// </summary>
     public void Use(IApplicationBuilder app, IConfiguration configuration)
     {
         // Add middleware for JIT provisioning and claims enrichment
-        // This middleware runs after authentication and enriches the ClaimsPrincipal with user data
         app.UseMiddleware<JITProvisioningMiddleware>();
 
-        // HTTP endpoints are mapped automatically by ModuleExtensions.UseModules()
-        // See: UserEndpoints class (implements IModuleEndpoints)
-    }
-
-    /// <summary>
-    /// Initializes the Users module by running database migrations and synchronizing roles/permissions.
-    /// This method is called automatically during application startup via InitializeApplicationAsync().
-    /// </summary>
-    public async Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
-    {
-        await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
-        await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);
+        // Map user management endpoints
+        if (app is Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpointRouteBuilder)
+        {
+            endpointRouteBuilder.MapUserEndpoints();
+        }
     }
 
     /// <summary>

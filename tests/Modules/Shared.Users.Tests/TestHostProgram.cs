@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Modules;
 using Shared.Users.Tests.Authentication;
 
@@ -10,42 +8,40 @@ namespace Shared.Users.Tests;
 /// <summary>
 /// Test host application for E2E testing of Users module.
 /// Provides a minimal web application with test JWT authentication.
-/// Uses ModuleLoader to automatically discover and register all modules.
-/// This class is used by WebApplicationFactory<TestHostProgram> as the entry point.
+///
+/// Each module is responsible for:
+/// - Registering its own services in Register()
+/// - Configuring its own middleware in Use()
 /// </summary>
 public class TestHostProgram
 {
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Register all modules (discovers them automatically via reflection)
-        builder.Services.AddModules(builder.Configuration);
+        // Discover modules (optionally exclude assemblies by prefix)
+        var modules = ModuleLoader.LoadModules(
+            exclusionPrefixes: null  // Add custom exclusions: new[] { "Legacy.", "Old." }
+        );
 
-        // Add test JWT Bearer authentication (overrides production Supabase/Clerk)
+        // Register all modules (each calls its own Register method)
+        builder.Services.RegisterModules(modules, builder.Configuration);
+
+        // Add test authentication
         builder.Services.AddAuthentication()
             .AddTestJwtBearer();
-
-        // Add authorization
         builder.Services.AddAuthorization();
 
         var app = builder.Build();
 
-        // Authentication middleware
+        // Middleware
         app.UseAuthentication();
-
-        // Authorization middleware
         app.UseAuthorization();
 
-        // Configure all modules' middleware (includes JIT provisioning, endpoints mapping, etc.)
-        var configuration = app.Services.GetRequiredService<IConfiguration>();
-        app.UseModules(configuration);
+        // Configure all modules (each calls its own Use method)
+        app.UseModules(modules, builder.Configuration);
 
-        // Initialize modules (each module's Initialize method runs migrations, seeds data, etc.)
-        await app.Services.InitializeApplicationAsync();
-
-        // Run the application
-        await app.RunAsync();
+        app.Run();
     }
 }
 

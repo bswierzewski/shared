@@ -2,52 +2,28 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Modules;
-using Shared.Infrastructure.Modules.Internal;
 
 namespace Shared.Infrastructure.Modules;
 
 /// <summary>
-/// Extension methods for module registration and configuration.
+/// Extension methods for module registration and middleware configuration.
+/// Provides simple loops for RegisterModules and UseModules that each module implements.
 /// </summary>
 public static class ModuleExtensions
 {
-    #region AddModules
-
     /// <summary>
-    /// Adds all module infrastructure services to the service collection.
-    /// This includes module discovery, registration, MediatR with behaviors, validators, and interceptors.
+    /// Registers all modules by calling their Register() method.
+    /// Each module is responsible for registering its own services.
     /// </summary>
     /// <param name="services">The service collection.</param>
+    /// <param name="modules">The modules to register.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddModules(
+    public static IServiceCollection RegisterModules(
         this IServiceCollection services,
+        IEnumerable<IModule> modules,
         IConfiguration configuration)
     {
-        // Load modules from assemblies ONCE
-        var assemblies = ModuleLoader.LoadAssemblies(configuration);
-        var modules = ModuleLoader.LoadModules(assemblies, configuration);
-
-        // Register modules collection in DI container (singleton)
-        // This allows UseModules() and InitializeApplicationAsync() to access modules without reloading
-        services.AddSingleton<IReadOnlyCollection<IModule>>(modules.AsReadOnly());
-
-        // Add MediatR with behaviors and handlers from all modules
-        // Automatically scans assemblies marked with IModuleAssembly
-        services.AddMediatRWithBehaviors();
-
-        // Add FluentValidation validators from all modules
-        // Automatically scans assemblies marked with IModuleAssembly
-        services.AddValidatorsFromModules();
-
-        // Add module endpoints from all modules
-        // Automatically scans assemblies marked with IModuleAssembly
-        services.AddModuleEndpoints();
-
-        // Add EF Core interceptors
-        services.AddAuditableEntityInterceptor();
-        services.AddDomainEventDispatchInterceptor();
-
         foreach (var module in modules)
         {
             Console.WriteLine($"Registering module '{module.Name}'...");
@@ -57,62 +33,24 @@ public static class ModuleExtensions
         return services;
     }
 
-    #endregion
-
-    #region UseModules
-
     /// <summary>
-    /// Configures the application pipeline for all loaded modules.
-    /// Retrieves modules from the DI container (loaded once during AddModules).
-    /// Invokes the Use method on all registered modules, then automatically maps all endpoints.
+    /// Configures middleware for all modules by calling their Use() method.
+    /// Each module is responsible for configuring its own middleware and endpoints.
     /// </summary>
     /// <param name="app">The application builder.</param>
+    /// <param name="modules">The modules to configure.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <returns>The application builder for chaining.</returns>
     public static IApplicationBuilder UseModules(
         this IApplicationBuilder app,
+        IEnumerable<IModule> modules,
         IConfiguration configuration)
     {
-        // Get modules from DI container (already loaded in AddModules)
-        var modules = app.ApplicationServices.GetRequiredService<IReadOnlyCollection<IModule>>();
-
-        // Configure middleware for each module
         foreach (var module in modules)
         {
             module.Use(app, configuration);
         }
 
-        // Automatically map all endpoints from IEndpointMapper implementations
-        app.MapModuleEndpoints();
-
         return app;
     }
-
-    #endregion
-
-    #region Application Initialization
-
-    /// <summary>
-    /// Initializes all registered modules.
-    /// Retrieves modules from the DI container (loaded once during AddModules).
-    /// Calls the Initialize method on each module to perform startup tasks like running migrations and seeding data.
-    /// </summary>
-    /// <param name="serviceProvider">The service provider.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A task representing the asynchronous initialization operation.</returns>
-    public static async Task InitializeApplicationAsync(
-        this IServiceProvider serviceProvider,
-        CancellationToken cancellationToken = default)
-    {
-        // Get modules from DI container (already loaded in AddModules)
-        var modules = serviceProvider.GetRequiredService<IReadOnlyCollection<IModule>>();
-
-        // Initialize each module
-        foreach (var module in modules)
-        {
-            await module.Initialize(serviceProvider, cancellationToken);
-        }
-    }
-
-    #endregion
 }

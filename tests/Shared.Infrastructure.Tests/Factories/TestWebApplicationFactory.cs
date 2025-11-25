@@ -40,7 +40,7 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
 
     /// <summary>
     /// Initializes the test factory by starting the PostgreSQL container and configuring the database respawner.
-    /// Each module is responsible for its own migrations via the Initialize method in IModule.
+    /// Each module is responsible for its own initialization (migrations, seeding, etc.) in its Register() or Use() methods.
     /// </summary>
     public async Task InitializeAsync()
     {
@@ -48,12 +48,6 @@ public abstract class TestWebApplicationFactory<TProgram> : WebApplicationFactor
 
         _connection = new NpgsqlConnection(_container.GetConnectionString());
         await _connection.OpenAsync();
-
-        // Initialize all modules (runs migrations, seeds data, etc.)
-        using (var scope = Services.CreateScope())
-        {
-            await scope.ServiceProvider.InitializeApplicationAsync();
-        }
 
         // Combine default ignored tables with subclass-specific ones
         var tablesToIgnore = new[] { "__EFMigrationsHistory" }

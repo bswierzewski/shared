@@ -1,85 +1,43 @@
 using System.Reflection;
-using Microsoft.Extensions.Configuration;
 using Shared.Abstractions.Modules;
 
 namespace Shared.Infrastructure.Modules;
 
 /// <summary>
-/// Provides functionality for dynamically loading modules from assemblies.
-/// Modules can be enabled or disabled via configuration.
+/// Discovers and loads IModule implementations.
+/// Each module is responsible for its own registration logic via Register() and Use() methods.
 /// </summary>
 public static class ModuleLoader
 {
     /// <summary>
-    /// Loads assemblies containing modules, filtering out disabled modules based on configuration.
+    /// Default assembly prefixes to exclude from scanning (System, Microsoft, etc).
     /// </summary>
-    /// <param name="configuration">The application configuration.</param>
-    /// <param name="modulePart">The namespace part that identifies module assemblies (default: "Modules").</param>
-    /// <returns>List of loaded assemblies.</returns>
-    public static IList<Assembly> LoadAssemblies(IConfiguration configuration, string modulePart = "Modules")
+    private static readonly string[] DefaultExclusionPrefixes = new[]
     {
-        var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
-        var locations = assemblies
-            .Where(x => !x.IsDynamic)
-            .Select(x => x.Location)
+        "System.",
+        "Microsoft.",
+        "netstandard"
+    };
+
+    /// <summary>
+    /// Discovers all IModule implementations from the specified assemblies and instantiates them.
+    /// </summary>
+    /// <param name="assembliesToScan">Assemblies to scan for modules. If null, scans all AppDomain assemblies (filtered by exclusion prefixes).</param>
+    /// <param name="exclusionPrefixes">Assembly name prefixes to exclude from scanning (in addition to default exclusions). Example: new[] { "Legacy.", "Old." }</param>
+    /// <returns>List of discovered module instances.</returns>
+    public static IList<IModule> LoadModules(Assembly[]? assembliesToScan = null, string[]? exclusionPrefixes = null)
+    {
+        // Determine which assemblies to scan
+        var allExclusionPrefixes = (exclusionPrefixes ?? Array.Empty<string>())
+            .Concat(DefaultExclusionPrefixes)
             .ToArray();
 
-        var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.dll")
-            .Where(x => !locations.Contains(x, StringComparer.InvariantCultureIgnoreCase))
+        var assemblies = (assembliesToScan ?? AppDomain.CurrentDomain.GetAssemblies())
+            .Where(a => !ShouldExcludeAssembly(a, allExclusionPrefixes))
             .ToList();
 
-        var disabledModules = new List<string>();
-
-        foreach (var file in files)
-        {
-            if (!file.Contains(modulePart))
-            {
-                continue;
-            }
-
-            var moduleName = ExtractModuleName(file, modulePart);
-            if (string.IsNullOrEmpty(moduleName))
-            {
-                continue;
-            }
-
-            var enabled = configuration.GetValue<bool>($"{moduleName}:module:enabled", true);
-            if (!enabled)
-            {
-                disabledModules.Add(file);
-            }
-        }
-
-        foreach (var file in files.Except(disabledModules))
-        {
-            try
-            {
-                var assemblyName = AssemblyName.GetAssemblyName(file);
-                var assembly = AppDomain.CurrentDomain.Load(assemblyName);
-                assemblies.Add(assembly);
-            }
-            catch (BadImageFormatException)
-            {
-                // Skip non-.NET assemblies
-            }
-            catch (Exception)
-            {
-                // Skip assemblies that cannot be loaded
-            }
-        }
-
-        return assemblies;
-    }
-
-    /// <summary>
-    /// Discovers and instantiates all IModule implementations from the given assemblies.
-    /// </summary>
-    /// <param name="assemblies">The assemblies to scan for modules.</param>
-    /// <returns>List of module instances.</returns>
-    public static IList<IModule> LoadModules(IEnumerable<Assembly> assemblies)
-    {
+        // Collect all types from filtered assemblies
         var types = new List<Type>();
-
         foreach (var assembly in assemblies)
         {
             try
@@ -88,131 +46,38 @@ public static class ModuleLoader
             }
             catch (ReflectionTypeLoadException ex)
             {
-                // GetTypes() can throw ReflectionTypeLoadException if some types can't be loaded
-                // We load only the types that could be loaded
                 if (ex.Types != null)
-                {
                     types.AddRange(ex.Types.Where(t => t != null)!);
-                }
-
-                // Log which types failed to load
-                if (ex.LoaderExceptions != null && ex.LoaderExceptions.Length > 0)
-                {
-                    Console.WriteLine($"Warning: Some types failed to load from assembly {assembly.GetName().Name}:");
-                    foreach (var loaderEx in ex.LoaderExceptions!)
-                    {
-                        Console.WriteLine($"  - {loaderEx?.Message}");
-                    }
-                }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Warning: Failed to load types from assembly {assembly.GetName().Name}: {ex.Message}");
+                // Skip assemblies that can't be loaded
             }
         }
 
-        return types
-            .Where(x => x != null && typeof(IModule).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
-            .OrderBy(x => x.Name)
-            .Select(x =>
-            {
-                try
-                {
-                    return Activator.CreateInstance(x) as IModule;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Warning: Failed to instantiate module {x.Name}: {ex.Message}");
-                    return null;
-                }
-            })
-            .Where(x => x is not null)
-            .Cast<IModule>()
-            .ToList();
+        // Find and instantiate IModule implementations
+        var modules = new List<IModule>();
+        foreach (var type in types
+            .Where(t => typeof(IModule).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+            .OrderBy(t => t.Name))
+        {
+            if (Activator.CreateInstance(type) is IModule module)
+                modules.Add(module);
+        }
+
+        return modules;
     }
 
     /// <summary>
-    /// Discovers and instantiates all IModule implementations from the given assemblies,
-    /// filtering out disabled modules based on configuration.
+    /// Determines whether an assembly should be excluded from scanning.
     /// </summary>
-    /// <param name="assemblies">The assemblies to scan for modules.</param>
-    /// <param name="configuration">The application configuration to check for enabled modules.</param>
-    /// <returns>List of enabled module instances.</returns>
-    public static IList<IModule> LoadModules(IEnumerable<Assembly> assemblies, IConfiguration configuration)
+    private static bool ShouldExcludeAssembly(Assembly assembly, string[] exclusionPrefixes)
     {
-        var types = new List<Type>();
+        var assemblyName = assembly.GetName().Name;
+        if (string.IsNullOrEmpty(assemblyName))
+            return true;
 
-        foreach (var assembly in assemblies)
-        {
-            try
-            {
-                types.AddRange(assembly.GetTypes());
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                // GetTypes() can throw ReflectionTypeLoadException if some types can't be loaded
-                // We load only the types that could be loaded
-                if (ex.Types != null)
-                {
-                    types.AddRange(ex.Types.Where(t => t != null)!);
-                }
-
-                // Log which types failed to load
-                if (ex.LoaderExceptions != null && ex.LoaderExceptions.Length > 0)
-                {
-                    Console.WriteLine($"Warning: Some types failed to load from assembly {assembly.GetName().Name}:");
-                    foreach (var loaderEx in ex.LoaderExceptions!)
-                    {
-                        Console.WriteLine($"  - {loaderEx?.Message}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Warning: Failed to load types from assembly {assembly.GetName().Name}: {ex.Message}");
-            }
-        }
-
-        return types
-            .Where(x => x != null && typeof(IModule).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
-            .OrderBy(x => x.Name)
-            .Select(x =>
-            {
-                try
-                {
-                    return Activator.CreateInstance(x) as IModule;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Warning: Failed to instantiate module {x.Name}: {ex.Message}");
-                    return null;
-                }
-            })
-            .Where(x => x is not null)
-            .Cast<IModule>()
-            .Where(module => configuration.GetValue($"{module.Name}:module:enabled", true))
-            .ToList();
-    }
-
-    /// <summary>
-    /// Extracts the module name from an assembly file path.
-    /// </summary>
-    /// <param name="filePath">The full path to the assembly file.</param>
-    /// <param name="modulePart">The namespace part that identifies module assemblies.</param>
-    /// <returns>The module name in lowercase, or empty string if not found.</returns>
-    private static string ExtractModuleName(string filePath, string modulePart)
-    {
-        var fileName = Path.GetFileNameWithoutExtension(filePath);
-        var parts = fileName.Split('.');
-
-        var moduleIndex = Array.FindIndex(parts, p =>
-            p.Equals(modulePart, StringComparison.OrdinalIgnoreCase));
-
-        if (moduleIndex >= 0 && moduleIndex + 1 < parts.Length)
-        {
-            return parts[moduleIndex + 1].ToLowerInvariant();
-        }
-
-        return string.Empty;
+        return exclusionPrefixes.Any(prefix =>
+            assemblyName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 }
