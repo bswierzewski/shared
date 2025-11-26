@@ -62,7 +62,7 @@ jobs:
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Infrastructure
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Tools/Shared.EnvFileGenerator
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Infrastructure
-          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION tests/Shared.Infrastructure.Tests
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Infrastructure.Tests
 
       - name: Publish to GitHub Packages
         run: dotnet nuget push ./nupkg/*.nupkg --source https://nuget.pkg.github.com/bswierzewski/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
