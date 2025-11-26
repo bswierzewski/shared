@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Shared.Users.Infrastructure.Consts;
 
-namespace Shared.Users.Tests.Authentication;
+namespace Shared.Users.Infrastructure.Extensions.JwtBearers;
 
 /// <summary>
 /// Extension methods for adding test JWT Bearer authentication.

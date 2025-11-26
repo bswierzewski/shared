@@ -6,13 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <StartupObject>Shared.Users.Tests.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Modules\Shared.Users\Shared.Users.Domain\Shared.Users.Domain.csproj" />
-    <ProjectReference Include="..\..\..\src\Modules\Shared.Users\Shared.Users.Application\Shared.Users.Application.csproj" />
-    <ProjectReference Include="..\..\..\src\Modules\Shared.Users\Shared.Users.Infrastructure\Shared.Users.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Modules\Shared.Users\Shared.Users.Web\Shared.Users.Web.csproj" />
     <ProjectReference Include="..\..\..\src\Shared.Infrastructure.Tests\Shared.Infrastructure.Tests.csproj" />
   </ItemGroup>
 

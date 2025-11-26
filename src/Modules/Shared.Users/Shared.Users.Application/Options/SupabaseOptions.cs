@@ -12,7 +12,7 @@ public class SupabaseOptions : IOptions
     /// <summary>
     /// The configuration section name for Supabase options.
     /// </summary>
-    public static string SectionName => $"Modules__{ModuleConstants.ModuleName}__Authentication__Supabase";
+    public static string SectionName => $"Modules:{ModuleConstants.ModuleName}:Authentication:Supabase";
 
     /// <summary>
     /// The Supabase project URL (e.g., https://your-project.supabase.co).

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Shared.Infrastructure.Tests.Builders;
 using Shared.Infrastructure.Tests.Core;
 using Shared.Users.Domain.Aggregates;
 using Shared.Users.Infrastructure.Persistence;
-using Shared.Users.Tests.Authentication;
 
 namespace Shared.Users.Tests;
 

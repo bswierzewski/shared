@@ -29,7 +29,6 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
 {
     private readonly List<Action<IServiceCollection>> _serviceConfigurations = new();
     private readonly List<Action<IWebHostBuilder>> _hostConfigurations = new();
-    private readonly List<string> _connectionStringConfigKeys = new();
     private readonly DatabaseResetStrategy _resetStrategy = new();
     private string _environment = "Testing";
     private ITestContainer? _container;
@@ -117,22 +116,6 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
     }
 
     /// <summary>
-    /// Adds configuration keys for connection strings that should be overridden with the test container connection string.
-    /// Use this to specify module-specific connection string keys.
-    /// </summary>
-    /// <param name="configKeys">The configuration keys to override (e.g., "Modules__Users:ConnectionString").</param>
-    /// <example>
-    /// <code>
-    /// .WithConnectionStringKeys($"{UsersDbContextOptions.SectionName}:ConnectionString")
-    /// </code>
-    /// </example>
-    public TestContextBuilder<TProgram> WithConnectionStringKeys(params string[] configKeys)
-    {
-        _connectionStringConfigKeys.AddRange(configKeys);
-        return this;
-    }
-
-    /// <summary>
     /// Builds and initializes the test context.
     /// This performs the following steps in order:
     /// <list type="number">
@@ -156,12 +139,6 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
         var hostBuilder = new TestHostBuilder<TProgram>()
             .WithEnvironment(_environment)
             .WithContainer(_container);
-
-        // Apply connection string keys
-        if (_connectionStringConfigKeys.Any())
-        {
-            hostBuilder.WithConnectionStringKeys(_connectionStringConfigKeys.ToArray());
-        }
 
         // Apply all host configurations
         foreach (var configure in _hostConfigurations)

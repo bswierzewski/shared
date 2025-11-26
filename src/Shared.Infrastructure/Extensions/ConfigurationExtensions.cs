@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Options;
 
 namespace Shared.Infrastructure.Extensions;
@@ -19,5 +20,18 @@ public static class ConfigurationExtensions
         var options = new T();
         configuration.GetSection(T.SectionName).Bind(options);
         return options;
+    }
+
+    /// <summary>
+    /// Configures IOptions in the service collection using the SectionName property from configuration.
+    /// </summary>
+    /// <typeparam name="T">The IOptions type to configure. Must have a SectionName property.</typeparam>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="configuration">The configuration to load from.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection ConfigureOptions<T>(this IServiceCollection services, IConfiguration configuration) where T : class, IOptions, new()
+    {
+        services.Configure<T>(configuration.GetSection(T.SectionName));
+        return services;
     }
 }

@@ -12,7 +12,7 @@ public class UsersDbContextOptions : IOptions
     /// <summary>
     /// The configuration section name for Users module database configuration.
     /// </summary>
-    public static string SectionName => $"Modules__{ModuleConstants.ModuleName}";
+    public static string SectionName => $"Modules:{ModuleConstants.ModuleName}";
 
     /// <summary>
     /// The database connection string for the Users module.

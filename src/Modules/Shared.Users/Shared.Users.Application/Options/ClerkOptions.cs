@@ -12,7 +12,7 @@ public class ClerkOptions : IOptions
     /// <summary>
     /// The configuration section name for Clerk options.
     /// </summary>
-    public static string SectionName => $"Modules__{ModuleConstants.ModuleName}__Authentication__Clerk";
+    public static string SectionName => $"Modules:{ModuleConstants.ModuleName}:Authentication:Clerk";
 
     /// <summary>
     /// The authority URL for Clerk (e.g., https://your-domain.clerk.accounts.dev).

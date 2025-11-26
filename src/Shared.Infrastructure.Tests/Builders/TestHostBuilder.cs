@@ -14,7 +14,6 @@ internal class TestHostBuilder<TProgram> where TProgram : class
 {
     private readonly List<Action<IServiceCollection>> _serviceConfigurations = new();
     private readonly List<Action<IWebHostBuilder>> _hostConfigurations = new();
-    private readonly List<string> _connectionStringConfigKeys = new() { "ConnectionStrings:DefaultConnection" };
     private ITestContainer? _container;
     private string _environment = "Testing";
 
@@ -55,17 +54,6 @@ internal class TestHostBuilder<TProgram> where TProgram : class
     }
 
     /// <summary>
-    /// Adds configuration keys for connection strings that should be overridden with the test container connection string.
-    /// Use this to specify module-specific connection string keys (e.g., "Modules__Users:ConnectionString").
-    /// </summary>
-    /// <param name="configKeys">The configuration keys to override.</param>
-    public TestHostBuilder<TProgram> WithConnectionStringKeys(params string[] configKeys)
-    {
-        _connectionStringConfigKeys.AddRange(configKeys);
-        return this;
-    }
-
-    /// <summary>
     /// Builds the test host with all configured settings.
     /// </summary>
     public TestHost<TProgram> Build()
@@ -74,7 +62,6 @@ internal class TestHostBuilder<TProgram> where TProgram : class
             _container,
             _serviceConfigurations,
             _hostConfigurations,
-            _connectionStringConfigKeys,
             _environment);
     }
 }

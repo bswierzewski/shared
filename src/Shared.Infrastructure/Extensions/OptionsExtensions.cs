@@ -18,7 +18,7 @@ public static class OptionsExtensions
         where TOptions : IOptions
     {
         var propertyName = GetMemberName(selector);
-        return $"{TOptions.SectionName}__{propertyName}";
+        return $"{TOptions.SectionName}:{propertyName}";
     }
 
     private static string GetMemberName<T>(Expression<Func<T, object?>> expression)

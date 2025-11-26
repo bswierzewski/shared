@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Infrastructure.Tests.Infrastructure.Containers;
 using Shared.Infrastructure.Tests.Infrastructure.Database;
+using Shared.Infrastructure.Tests.Extensions.Npgsql;
 
 namespace Shared.Infrastructure.Tests.Core;
 
@@ -18,7 +18,6 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
     private readonly ITestContainer? _container;
     private readonly List<Action<IServiceCollection>> _serviceConfigurations = new();
     private readonly List<Action<IWebHostBuilder>> _hostConfigurations = new();
-    private readonly string[] _connectionStringConfigKeys;
     private DatabaseResetStrategy? _resetStrategy;
     private string _environment = "Testing";
 
@@ -26,13 +25,11 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
         ITestContainer? container,
         IEnumerable<Action<IServiceCollection>> serviceConfigurations,
         IEnumerable<Action<IWebHostBuilder>> hostConfigurations,
-        IEnumerable<string> connectionStringConfigKeys,
         string environment)
     {
         _container = container;
         _serviceConfigurations.AddRange(serviceConfigurations);
         _hostConfigurations.AddRange(hostConfigurations);
-        _connectionStringConfigKeys = connectionStringConfigKeys.ToArray();
         _environment = environment;
     }
 
@@ -63,24 +60,6 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
     {
         builder.UseEnvironment(_environment);
 
-        // Override connection strings if container is configured
-        if (_container != null)
-        {
-            builder.ConfigureAppConfiguration((context, config) =>
-            {
-                var testConnectionString = _container.GetConnectionString();
-
-                // Override all configured connection string keys with test container connection
-                var overrides = new Dictionary<string, string?>();
-                foreach (var configKey in _connectionStringConfigKeys)
-                {
-                    overrides[configKey] = testConnectionString;
-                }
-
-                config.AddInMemoryCollection(overrides);
-            });
-        }
-
         // Apply custom host configurations
         foreach (var configure in _hostConfigurations)
         {
@@ -89,6 +68,12 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
 
         builder.ConfigureServices(services =>
         {
+            // Replace all NpgsqlDataSource instances with test versions if container is configured
+            if (_container != null)
+            {
+                services.ReplaceNpgsqlDataSources(_container.GetConnectionString());
+            }
+
             // Use ephemeral Data Protection keys for tests
             services.AddDataProtection()
                 .UseEphemeralDataProtectionProvider();

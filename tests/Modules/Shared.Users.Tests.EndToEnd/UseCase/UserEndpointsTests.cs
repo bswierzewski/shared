@@ -4,7 +4,7 @@ using Shared.Infrastructure.Tests.Extensions.Http;
 using Shared.Users.Application.DTOs;
 using Shared.Users.Infrastructure.Persistence;
 
-namespace Shared.Users.Tests.E2E;
+namespace Shared.Users.Tests.EndToEnd.UseCase;
 
 /// <summary>
 /// E2E tests for Users module HTTP endpoints.

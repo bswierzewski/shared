@@ -1,10 +1,11 @@
 using FluentValidation;
-using MediatR;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Npgsql;
 using Shared.Abstractions.Authorization;
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Extensions;
@@ -14,7 +15,6 @@ using Shared.Users.Application.Abstractions;
 using Shared.Users.Application.Options;
 using Shared.Users.Domain;
 using Shared.Users.Infrastructure.Endpoints;
-using Shared.Users.Infrastructure.Extensions.JwtBearers;
 using Shared.Users.Infrastructure.Middleware;
 using Shared.Users.Infrastructure.Persistence;
 using Shared.Users.Infrastructure.Services;
@@ -53,17 +53,25 @@ public class UsersModule : IModule
         services.AddHttpContextAccessor();
 
         // Configure all IOptions from the module based on their SectionName
-        ConfigureOptionsFromConfiguration(services, configuration);
+        ConfigureOptions(services, configuration);
 
-        // Register DbContext
-        services.AddDbContext<UsersDbContext>((sp, dbOptions) =>
+        // Register NpgsqlDataSource for efficient connection pooling
+        services.AddKeyedSingleton(ModuleConstants.ModuleName, (sp, key) =>
         {
-            var dbContextOptions = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<UsersDbContextOptions>>();
+            var dbContextOptions = sp.GetRequiredService<IOptions<UsersDbContextOptions>>();
             var connectionString = dbContextOptions.Value.ConnectionString
                 ?? throw new InvalidOperationException($"Connection string not found in section '{UsersDbContextOptions.SectionName}'");
 
-            dbOptions.UseNpgsql(connectionString)
-                     .AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
+            return NpgsqlDataSource.Create(connectionString);
+        });
+
+        // Register DbContext
+        services.AddDbContext<UsersDbContext>((sp, options) =>
+        {
+            var dataSource = sp.GetRequiredKeyedService<NpgsqlDataSource>(ModuleConstants.ModuleName);
+
+            options.UseNpgsql(dataSource)
+                 .AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
         });
 
         // Register DbContext abstractions
@@ -86,25 +94,6 @@ public class UsersModule : IModule
         // Register FluentValidation validators from Application and Infrastructure assemblies
         services.AddValidatorsFromAssembly(typeof(ApplicationAssembly).Assembly);
         services.AddValidatorsFromAssembly(typeof(InfrastructureAssembly).Assembly);
-
-        // Setup authentication based on configured provider
-        var authOptions = configuration.LoadOptions<AuthenticationProviderOptions>();
-
-        if (authOptions.Provider != AuthenticationProvider.None)
-        {
-            var authBuilder = services.AddAuthentication();
-
-            switch (authOptions.Provider)
-            {
-                case AuthenticationProvider.Supabase:
-                    authBuilder.AddSupabaseJwtBearer();
-                    break;
-
-                case AuthenticationProvider.Clerk:
-                    authBuilder.AddClerkJwtBearer();
-                    break;
-            }
-        }
     }
 
     /// <summary>
@@ -129,22 +118,18 @@ public class UsersModule : IModule
     public async Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
     {
         await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
+        await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);     
     }
 
     /// <summary>
     /// Configures all IOptions from the configuration based on their SectionName properties.
     /// </summary>
-    private static void ConfigureOptionsFromConfiguration(IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureOptions(IServiceCollection services, IConfiguration configuration)
     {
-        // Configure DbContext options
-        services.Configure<UsersDbContextOptions>(configuration.GetSection(UsersDbContextOptions.SectionName));
-
-        // Configure authentication provider options
-        services.Configure<AuthenticationProviderOptions>(configuration.GetSection(AuthenticationProviderOptions.SectionName));
-
-        // Configure provider-specific options
-        services.Configure<ClerkOptions>(configuration.GetSection(ClerkOptions.SectionName));
-        services.Configure<SupabaseOptions>(configuration.GetSection(SupabaseOptions.SectionName));
+        services
+            .ConfigureOptions<UsersDbContextOptions>(configuration)
+            .ConfigureOptions<ClerkOptions>(configuration)
+            .ConfigureOptions<SupabaseOptions>(configuration);
     }
 
     /// <summary>

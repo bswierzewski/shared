@@ -1,8 +1,9 @@
+using Shared.Infrastructure.Tests.Builders;
 using Shared.Infrastructure.Tests.Core;
 using Shared.Infrastructure.Tests.Extensions.Http;
 using Shared.Users.Infrastructure.Persistence;
 
-namespace Shared.Users.Tests.E2E;
+namespace Shared.Users.Tests.EndToEnd.UseCase;
 
 /// <summary>
 /// E2E tests for Just-In-Time (JIT) user provisioning.
@@ -123,7 +124,7 @@ public class UserProvisioningTests
     {
         // Arrange - Create token with expiry in the past
         var email = "expired@example.com";
-        var token = new Authentication.JwtTokenBuilder()
+        var token = new JwtTokenBuilder()
             .WithEmail(email)
             .WithSubject(Guid.NewGuid().ToString())
             .WithExpiration(DateTime.UtcNow.AddHours(-1)) // Expired 1 hour ago

@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Shared.Users.Tests.Authentication;
+namespace Shared.Infrastructure.Tests.Builders;
 
 /// <summary>
 /// Utility for building test JWT tokens with custom claims.
