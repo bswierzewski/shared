@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using Shared.Abstractions.Authorization;
 using Shared.Abstractions.Modules;
+using Shared.Infrastructure.Behaviors;
 using Shared.Infrastructure.Extensions;
 using Shared.Infrastructure.Persistence.Migrations;
 using Shared.Users.Application;
@@ -53,7 +54,10 @@ public class UsersModule : IModule
         services.AddHttpContextAccessor();
 
         // Configure all IOptions from the module based on their SectionName
-        ConfigureOptions(services, configuration);
+        services
+            .ConfigureOptions<UsersDbContextOptions>(configuration)
+            .ConfigureOptions<ClerkOptions>(configuration)
+            .ConfigureOptions<SupabaseOptions>(configuration);
 
         // Register NpgsqlDataSource for efficient connection pooling
         services.AddKeyedSingleton(ModuleConstants.ModuleName, (sp, key) =>
@@ -87,13 +91,20 @@ public class UsersModule : IModule
         // Register MediatR handlers from Application and Infrastructure assemblies
         services.AddMediatR(config =>
         {
-            config.RegisterServicesFromAssembly(typeof(ApplicationAssembly).Assembly);
-            config.RegisterServicesFromAssembly(typeof(InfrastructureAssembly).Assembly);
+            config
+                .RegisterServicesFromAssembly(typeof(ApplicationAssembly).Assembly)
+                .RegisterServicesFromAssembly(typeof(InfrastructureAssembly).Assembly)
+                .AddOpenBehavior(typeof(LoggingBehavior<,>))
+                .AddOpenBehavior(typeof(UnhandledExceptionBehavior<,>))
+                .AddOpenBehavior(typeof(ValidationBehavior<,>))
+                .AddOpenBehavior(typeof(AuthorizationBehavior<,>))
+                .AddOpenBehavior(typeof(PerformanceBehavior<,>));
         });
 
         // Register FluentValidation validators from Application and Infrastructure assemblies
-        services.AddValidatorsFromAssembly(typeof(ApplicationAssembly).Assembly);
-        services.AddValidatorsFromAssembly(typeof(InfrastructureAssembly).Assembly);
+        services
+            .AddValidatorsFromAssembly(typeof(ApplicationAssembly).Assembly)
+            .AddValidatorsFromAssembly(typeof(InfrastructureAssembly).Assembly);
     }
 
     /// <summary>
@@ -119,17 +130,6 @@ public class UsersModule : IModule
     {
         await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
         await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Configures all IOptions from the configuration based on their SectionName properties.
-    /// </summary>
-    private static void ConfigureOptions(IServiceCollection services, IConfiguration configuration)
-    {
-        services
-            .ConfigureOptions<UsersDbContextOptions>(configuration)
-            .ConfigureOptions<ClerkOptions>(configuration)
-            .ConfigureOptions<SupabaseOptions>(configuration);
     }
 
     /// <summary>
