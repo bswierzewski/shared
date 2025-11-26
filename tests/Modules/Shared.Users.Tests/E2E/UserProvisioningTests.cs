@@ -1,4 +1,5 @@
-using Shared.Infrastructure.Tests.Extensions;
+using Shared.Infrastructure.Tests.Core;
+using Shared.Infrastructure.Tests.Extensions.Http;
 using Shared.Users.Infrastructure.Persistence;
 
 namespace Shared.Users.Tests.E2E;
@@ -8,9 +9,15 @@ namespace Shared.Users.Tests.E2E;
 /// Tests the flow where users are automatically created or updated when they authenticate
 /// with a new external provider or for the first time.
 /// </summary>
-[Collection("Users Web Application Factory Collection")]
-public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTestBase(factory)
+[Collection("Users")]
+public class UserProvisioningTests
 {
+    private readonly TestContext _context;
+
+    public UserProvisioningTests(UsersTestFixture fixture)
+    {
+        _context = fixture.Context;
+    }
     /// <summary>
     /// Tests that a new user is automatically provisioned (created) when they authenticate for the first time.
     /// The JitProvisioningMiddleware calls UserProvisioningService.UpsertUserAsync() which creates the user.
@@ -18,21 +25,24 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
     [Fact]
     public async Task NewUser_ShouldBeProvisionedAutomatically()
     {
+        // Reset database
+        await _context.ResetDatabaseAsync();
+
         // Arrange
         var email = "newuser@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
         // Act - Call any endpoint that requires authentication
-        var response = await Client.GetAsync("/api/users");
+        var response = await _context.Client.GetAsync("/api/users");
 
         // Assert - Endpoint should succeed (or return 401 if no GetAll, but user is provisioned)
         // The important part is that JIT provisioning happens in the middleware
-        var userExists = await UserExistsAsync(email);
+        var userExists = await _context.UserExistsAsync(email);
         userExists.Should().BeTrue();
 
         // Verify user was created with correct data
-        var user = await GetUserFromDbAsync(email);
+        var user = await _context.GetUserFromDbAsync(email);
         user.Email.Should().Be(email);
         user.IsActive.Should().BeTrue();
     }
@@ -48,27 +58,27 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
         var email = "existing@example.com";
         var externalUserId = "ext-123";
 
-        var token1 = GenerateToken(email, externalUserId, "First Name");
-        Client.WithBearerToken(token1);
+        var token1 = _context.GenerateUserToken(email, externalUserId, "First Name");
+        _context.Client.WithBearerToken(token1);
 
         // Act - First request
-        await Client.GetAsync("/api/users");
-        var firstUser = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var firstUser = await _context.GetUserFromDbAsync(email);
         var firstUserId = firstUser.Id;
 
         // Arrange - Second request with same email and external ID
-        var token2 = GenerateToken(email, externalUserId, "Updated Name");
-        Client.WithBearerToken(token2);
+        var token2 = _context.GenerateUserToken(email, externalUserId, "Updated Name");
+        _context.Client.WithBearerToken(token2);
 
         // Act - Second request
-        await Client.GetAsync("/api/users");
+        await _context.Client.GetAsync("/api/users");
 
         // Assert - Same user should be updated, not duplicated
-        var secondUser = await GetUserFromDbAsync(email);
+        var secondUser = await _context.GetUserFromDbAsync(email);
         secondUser.Id.Should().Be(firstUserId);
 
         // Verify only one user with this email exists
-        var db = Resolve<UsersDbContext>();
+        var db = _context.GetRequiredService<UsersDbContext>();
         var allWithEmail = await db.Users
             .Where(u => u.Email == email)
             .ToListAsync();
@@ -84,22 +94,22 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
     {
         // Arrange - Create user
         var email = "login@example.com";
-        var token1 = GenerateToken(email);
-        Client.WithBearerToken(token1);
-        await Client.GetAsync("/api/users");
+        var token1 = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token1);
+        await _context.Client.GetAsync("/api/users");
 
-        var user1 = await GetUserFromDbAsync(email);
+        var user1 = await _context.GetUserFromDbAsync(email);
         user1.LastLoginAt.Should().NotBeNull();
         var firstLogin = user1.LastLoginAt!.Value;
 
         // Act - Wait a bit and authenticate again
         await Task.Delay(100);
-        var token2 = GenerateToken(email);
-        Client.WithBearerToken(token2);
-        await Client.GetAsync("/api/users");
+        var token2 = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token2);
+        await _context.Client.GetAsync("/api/users");
 
         // Assert - Last login should be updated
-        var user2 = await GetUserFromDbAsync(email);
+        var user2 = await _context.GetUserFromDbAsync(email);
         user2.LastLoginAt.Should().NotBeNull();
         user2.LastLoginAt!.Value.Should().BeAfter(firstLogin);
     }
@@ -119,13 +129,13 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
             .WithExpiration(DateTime.UtcNow.AddHours(-1)) // Expired 1 hour ago
             .Build();
 
-        Client.WithBearerToken(token);
+        _context.Client.WithBearerToken(token);
 
         // Act - Make authenticated request with expired token
-        await Client.GetAsync("/api/users");
+        await _context.Client.GetAsync("/api/users");
 
         // Assert - User should still be provisioned despite expired token
-        var userExists = await UserExistsAsync(email);
+        var userExists = await _context.UserExistsAsync(email);
         userExists.Should().BeTrue();
     }
 
@@ -140,12 +150,12 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
         var email = "multiauth@example.com";
         var supabaseId = "supabase-123";
 
-        var token1 = GenerateToken(email, supabaseId);
-        Client.WithBearerToken(token1);
-        await Client.GetAsync("/api/users");
+        var token1 = _context.GenerateUserToken(email, supabaseId);
+        _context.Client.WithBearerToken(token1);
+        await _context.Client.GetAsync("/api/users");
 
-        var user1 = await GetUserFromDbAsync(email);
-        var providers1 = await Resolve<UsersDbContext>()
+        var user1 = await _context.GetUserFromDbAsync(email);
+        var providers1 = await _context.GetRequiredService<UsersDbContext>()
             .Users
             .Where(u => u.Id == user1.Id)
             .Select(u => u.ExternalProviders)
@@ -155,15 +165,15 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
 
         // Act - Authenticate with different external ID (simulating different provider)
         var clerkId = "clerk-456";
-        var token2 = GenerateToken(email, clerkId);
-        Client.WithBearerToken(token2);
-        await Client.GetAsync("/api/users");
+        var token2 = _context.GenerateUserToken(email, clerkId);
+        _context.Client.WithBearerToken(token2);
+        await _context.Client.GetAsync("/api/users");
 
         // Assert - Same user should now have two external providers linked
-        var user2 = await GetUserFromDbAsync(email);
+        var user2 = await _context.GetUserFromDbAsync(email);
         user2.Id.Should().Be(user1.Id);
 
-        var providersAfter = await Resolve<UsersDbContext>()
+        var providersAfter = await _context.GetRequiredService<UsersDbContext>()
             .Users
             .Where(u => u.Id == user2.Id)
             .Select(u => u.ExternalProviders)
@@ -180,14 +190,14 @@ public class UserProvisioningTests(UsersWebApplicationFactory factory) : UsersTe
     {
         // Arrange
         var email = "active@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
         // Act
-        await Client.GetAsync("/api/users");
+        await _context.Client.GetAsync("/api/users");
 
         // Assert
-        var user = await GetUserFromDbAsync(email);
+        var user = await _context.GetUserFromDbAsync(email);
         user.IsActive.Should().BeTrue();
     }
 

@@ -13,7 +13,7 @@ namespace Shared.Users.Tests;
 /// - Registering its own services in Register()
 /// - Configuring its own middleware in Use()
 /// </summary>
-public class TestHostProgram
+public class Program
 {
     public static void Main(string[] args)
     {

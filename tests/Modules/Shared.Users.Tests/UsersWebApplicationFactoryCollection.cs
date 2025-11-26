@@ -1,10 +1,10 @@
 namespace Shared.Users.Tests;
 
 /// <summary>
-/// xUnit collection definition for sharing the UsersWebApplicationFactory across tests.
-/// This allows all tests in this collection to share a single factory instance and database.
+/// xUnit collection definition for sharing the UsersTestFixture across tests.
+/// This allows all tests in this collection to share a single test context, container, and database.
 /// </summary>
-[CollectionDefinition("Users Web Application Factory Collection")]
-public class UsersWebApplicationFactoryCollection : ICollectionFixture<UsersWebApplicationFactory>
+[CollectionDefinition("Users")]
+public class UsersCollection : ICollectionFixture<UsersTestFixture>
 {
 }

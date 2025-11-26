@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <StartupObject>Shared.Users.Tests.TestHostProgram</StartupObject>
+    <StartupObject>Shared.Users.Tests.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,25 +1,29 @@
+using Microsoft.EntityFrameworkCore;
+using Shared.Infrastructure.Tests.Core;
+using Shared.Users.Domain.Aggregates;
 using Shared.Users.Infrastructure.Persistence;
 using Shared.Users.Tests.Authentication;
 
 namespace Shared.Users.Tests;
 
 /// <summary>
-/// Base class for Users module E2E tests.
-/// Provides common test utilities and JWT token generation.
-/// Inherits from TestBase to get HTTP client, service resolution, and database reset functionality.
+/// Extension methods for Users module tests.
+/// Provides domain-specific test helpers as extension methods on TestContext.
 /// </summary>
-public abstract class UsersTestBase(UsersWebApplicationFactory factory) : TestBase(factory)
+public static class UsersTestExtensions
 {
     /// <summary>
     /// Generates a test JWT token with specified claims.
-    /// Uses JwtTokenBuilder to create a valid JWT structure that will be parsed by JwtSecurityTokenHandler.
+    /// Uses JwtTokenBuilder to create a valid JWT structure.
     /// </summary>
+    /// <param name="context">The test context.</param>
     /// <param name="email">Email claim (required)</param>
-    /// <param name="userId">Subject (sub) claim - external user ID from auth provider. Defaults to random GUID.</param>
+    /// <param name="userId">Subject (sub) claim - external user ID. Defaults to random GUID.</param>
     /// <param name="displayName">Display name claim. Optional.</param>
     /// <param name="additionalClaims">Additional custom claims. Optional.</param>
     /// <returns>A valid JWT token string</returns>
-    protected string GenerateToken(
+    public static string GenerateUserToken(
+        this TestContext context,
         string email,
         string? userId = null,
         string? displayName = null,
@@ -43,11 +47,14 @@ public abstract class UsersTestBase(UsersWebApplicationFactory factory) : TestBa
     /// Retrieves a user from the database by email.
     /// Useful for assertions after endpoint calls.
     /// </summary>
+    /// <param name="context">The test context.</param>
     /// <param name="email">User email to search for</param>
     /// <returns>The user entity or throws if not found</returns>
-    protected async Task<Domain.Aggregates.User> GetUserFromDbAsync(string email)
+    public static async Task<User> GetUserFromDbAsync(
+        this TestContext context,
+        string email)
     {
-        var db = Resolve<UsersDbContext>();
+        var db = context.GetRequiredService<UsersDbContext>();
         return await db.Users
             .AsNoTracking()
             .FirstAsync(u => u.Email == email);
@@ -56,9 +63,11 @@ public abstract class UsersTestBase(UsersWebApplicationFactory factory) : TestBa
     /// <summary>
     /// Retrieves a user with their roles loaded.
     /// </summary>
-    protected async Task<Domain.Aggregates.User> GetUserWithRolesFromDbAsync(string email)
+    public static async Task<User> GetUserWithRolesFromDbAsync(
+        this TestContext context,
+        string email)
     {
-        var db = Resolve<UsersDbContext>();
+        var db = context.GetRequiredService<UsersDbContext>();
         return await db.Users
             .AsNoTracking()
             .Include(u => u.Roles)
@@ -68,9 +77,11 @@ public abstract class UsersTestBase(UsersWebApplicationFactory factory) : TestBa
     /// <summary>
     /// Retrieves a user with their permissions loaded.
     /// </summary>
-    protected async Task<Domain.Aggregates.User> GetUserWithPermissionsFromDbAsync(string email)
+    public static async Task<User> GetUserWithPermissionsFromDbAsync(
+        this TestContext context,
+        string email)
     {
-        var db = Resolve<UsersDbContext>();
+        var db = context.GetRequiredService<UsersDbContext>();
         return await db.Users
             .AsNoTracking()
             .Include(u => u.Permissions)
@@ -80,9 +91,11 @@ public abstract class UsersTestBase(UsersWebApplicationFactory factory) : TestBa
     /// <summary>
     /// Checks if a user exists in the database.
     /// </summary>
-    protected async Task<bool> UserExistsAsync(string email)
+    public static async Task<bool> UserExistsAsync(
+        this TestContext context,
+        string email)
     {
-        var db = Resolve<UsersDbContext>();
+        var db = context.GetRequiredService<UsersDbContext>();
         return await db.Users.AnyAsync(u => u.Email == email);
     }
 }

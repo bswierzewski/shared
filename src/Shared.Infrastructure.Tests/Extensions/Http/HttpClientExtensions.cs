@@ -2,7 +2,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace Shared.Infrastructure.Tests.Extensions;
+namespace Shared.Infrastructure.Tests.Extensions.Http;
 
 /// <summary>
 /// Extensions for HttpClient to simplify common test operations.

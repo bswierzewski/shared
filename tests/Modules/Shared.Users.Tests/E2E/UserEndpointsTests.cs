@@ -1,5 +1,6 @@
 using System.Net;
-using Shared.Infrastructure.Tests.Extensions;
+using Shared.Infrastructure.Tests.Core;
+using Shared.Infrastructure.Tests.Extensions.Http;
 using Shared.Users.Application.DTOs;
 using Shared.Users.Infrastructure.Persistence;
 
@@ -9,28 +10,36 @@ namespace Shared.Users.Tests.E2E;
 /// E2E tests for Users module HTTP endpoints.
 /// Tests user retrieval, role management, and permission management endpoints.
 /// </summary>
-[Collection("Users Web Application Factory Collection")]
-public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestBase(factory)
+[Collection("Users")]
+public class UserEndpointsTests
 {
+    private readonly TestContext _context;
+
+    public UserEndpointsTests(UsersTestFixture fixture)
+    {
+        _context = fixture.Context;
+    }
     /// <summary>
     /// Tests the GET /api/users/{userId} endpoint retrieves an existing user.
     /// </summary>
     [Fact]
     public async Task GetUserById_WithValidUser_ShouldReturnUser()
     {
-        // Arrange - Provision a user
+        // Arrange - Reset database and provision a user
+        await _context.ResetDatabaseAsync();
+
         var email = "gettest@example.com";
         var userId = Guid.NewGuid().ToString();
-        var token = GenerateToken(email, userId);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email, userId);
+        _context.Client.WithBearerToken(token);
 
         // Provision user
-        await Client.GetAsync("/api/users");
+        await _context.Client.GetAsync("/api/users");
 
-        var user = await GetUserFromDbAsync(email);
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Act - Get user by ID
-        var response = await Client.GetAsync($"/api/users/{user.Id}");
+        var response = await _context.Client.GetAsync($"/api/users/{user.Id}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -47,11 +56,11 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     public async Task GetUserById_NonExistent_ShouldReturn404()
     {
         // Arrange
-        var token = GenerateToken("anyuser@example.com");
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken("anyuser@example.com");
+        _context.Client.WithBearerToken(token);
 
         // Act
-        var response = await Client.GetAsync($"/api/users/{Guid.NewGuid()}");
+        var response = await _context.Client.GetAsync($"/api/users/{Guid.NewGuid()}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -65,15 +74,15 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange - Provision user and get their ID
         var email = "roletest@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
         // Provision the user
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Act - Assign role
-        var response = await Client.PostJsonAsync(
+        var response = await _context.Client.PostJsonAsync(
             $"/api/users/{user.Id}/roles/admin",
             new { });
 
@@ -81,7 +90,7 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Verify role was assigned in database
-        var userWithRoles = await GetUserWithRolesFromDbAsync(email);
+        var userWithRoles = await _context.GetUserWithRolesFromDbAsync(email);
         userWithRoles.Roles.Should().Contain(r => r.Name == "admin");
     }
 
@@ -93,23 +102,23 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange
         var email = "idempotent@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Act - Assign role first time
-        var response1 = await Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
+        var response1 = await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
         response1.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Act - Assign same role second time
-        var response2 = await Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
+        var response2 = await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
 
         // Assert - Second assignment should also succeed
         response2.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userWithRoles = await GetUserWithRolesFromDbAsync(email);
+        var userWithRoles = await _context.GetUserWithRolesFromDbAsync(email);
         // User should still have exactly one "admin" role, not duplicated
         userWithRoles.Roles.Count(r => r.Name == "admin").Should().Be(1);
     }
@@ -122,22 +131,22 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange - Provision user and assign role
         var email = "removetest@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Assign role first
-        await Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
+        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
 
         // Act - Remove role
-        var response = await Client.DeleteAsync($"/api/users/{user.Id}/roles/admin");
+        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/roles/admin");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userAfterRemoval = await GetUserWithRolesFromDbAsync(email);
+        var userAfterRemoval = await _context.GetUserWithRolesFromDbAsync(email);
         userAfterRemoval.Roles.Should().NotContain(r => r.Name == "admin");
     }
 
@@ -149,14 +158,14 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange
         var email = "removenonexist@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Act - Try to remove role that was never assigned
-        var response = await Client.DeleteAsync($"/api/users/{user.Id}/roles/nonexistent");
+        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/roles/nonexistent");
 
         // Assert - Should still return success (idempotent)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -170,21 +179,21 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange - Provision user
         var email = "permtest@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Act - Grant permission
-        var response = await Client.PostJsonAsync(
+        var response = await _context.Client.PostJsonAsync(
             $"/api/users/{user.Id}/permissions/users.view",
             new { });
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userWithPerms = await GetUserWithPermissionsFromDbAsync(email);
+        var userWithPerms = await _context.GetUserWithPermissionsFromDbAsync(email);
         userWithPerms.Permissions.Should().Contain(p => p.Name == "users.view");
     }
 
@@ -196,16 +205,16 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange
         var email = "permreason@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         var reason = "Temporary elevated access for project X";
 
         // Act - Grant permission with reason
-        var response = await Client.PostJsonAsync(
+        var response = await _context.Client.PostJsonAsync(
             $"/api/users/{user.Id}/permissions/users.manage_permissions?reason={System.Web.HttpUtility.UrlEncode(reason)}",
             new { });
 
@@ -221,22 +230,22 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange - Provision user and grant permission
         var email = "revoke@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Grant permission first
-        await Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.delete", new { });
+        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.delete", new { });
 
         // Act - Revoke permission
-        var response = await Client.DeleteAsync($"/api/users/{user.Id}/permissions/users.delete");
+        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/permissions/users.delete");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userAfterRevoke = await GetUserWithPermissionsFromDbAsync(email);
+        var userAfterRevoke = await _context.GetUserWithPermissionsFromDbAsync(email);
         userAfterRevoke.Permissions.Should().NotContain(p => p.Name == "users.delete");
     }
 
@@ -248,14 +257,14 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange
         var email = "revokenonexist@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Act - Try to revoke permission that was never granted
-        var response = await Client.DeleteAsync($"/api/users/{user.Id}/permissions/nonexistent");
+        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/permissions/nonexistent");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -270,20 +279,20 @@ public class UserEndpointsTests(UsersWebApplicationFactory factory) : UsersTestB
     {
         // Arrange
         var email = "multi@example.com";
-        var token = GenerateToken(email);
-        Client.WithBearerToken(token);
+        var token = _context.GenerateUserToken(email);
+        _context.Client.WithBearerToken(token);
 
-        await Client.GetAsync("/api/users");
-        var user = await GetUserFromDbAsync(email);
+        await _context.Client.GetAsync("/api/users");
+        var user = await _context.GetUserFromDbAsync(email);
 
         // Act - Multiple operations
-        await Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
-        await Client.PostJsonAsync($"/api/users/{user.Id}/roles/editor", new { });
-        await Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.view", new { });
-        await Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.edit", new { });
+        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
+        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/editor", new { });
+        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.view", new { });
+        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.edit", new { });
 
         // Assert - All operations should be persisted
-        var userFinal = await Resolve<UsersDbContext>()
+        var userFinal = await _context.GetRequiredService<UsersDbContext>()
             .Users
             .Include(u => u.Roles)
             .Include(u => u.Permissions)

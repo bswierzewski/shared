@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using DotNetEnv;
 
-namespace Shared.Infrastructure.Tests.ModuleInitializers;
+namespace Shared.Infrastructure.Tests.Infrastructure.Environment;
 
 /// <summary>
 /// Automatically loads environment variables from .env file before any test code executes.
@@ -11,7 +11,7 @@ namespace Shared.Infrastructure.Tests.ModuleInitializers;
 /// CA2255 suppressed: This is intentionally used in a test infrastructure library.
 /// It ensures environment variables are loaded before any consuming test projects run.
 /// </remarks>
-internal static class EnvironmentModuleInitializer
+internal static class EnvironmentLoader
 {
     /// <summary>
     /// Loads .env file if it exists. Called automatically by the runtime before module initialization.
@@ -21,11 +21,11 @@ internal static class EnvironmentModuleInitializer
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2255:The ModuleInitializer attribute should not be used in libraries")]
     public static void Initialize()
     {
-        Console.WriteLine($"[{nameof(EnvironmentModuleInitializer)}] Current Directory: {Directory.GetCurrentDirectory()}");
+        Console.WriteLine($"[{nameof(EnvironmentLoader)}] Current Directory: {Directory.GetCurrentDirectory()}");
 
         // Find and load .env file from current directory or parent directories
         var envPath = Env.TraversePath().Load();
 
-        Console.WriteLine($"[{nameof(EnvironmentModuleInitializer)}] .env found and loaded (count: {envPath.Count()})");
+        Console.WriteLine($"[{nameof(EnvironmentLoader)}] .env found and loaded (count: {envPath.Count()})");
     }
 }
