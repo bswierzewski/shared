@@ -87,7 +87,7 @@ public class EnvFileGenerator
                 Console.WriteLine($"  Properties: {properties.Count}\n");
             }
         }
-        
+
         await Task.CompletedTask; // Keep signature async compatible
     }
 
@@ -119,7 +119,7 @@ public class EnvFileGenerator
                 File.Copy(absoluteEnvPath, $"{absoluteEnvPath}.backup", overwrite: true);
                 Console.WriteLine($"Backup created: {absoluteEnvPath}.backup");
             }
-            
+
             existingValues = await ParseEnvFile(absoluteEnvPath, cancellationToken);
         }
 
@@ -190,7 +190,7 @@ public class EnvFileGenerator
         if (ShouldSkipAssembly(assemblyPath)) return [];
 
         var fullPath = Path.GetFullPath(assemblyPath);
-        
+
         // 2. Guard Clause: Already visited
         if (scannedAssemblies.Contains(fullPath)) return [];
         scannedAssemblies.Add(fullPath);
@@ -204,7 +204,7 @@ public class EnvFileGenerator
             ResolveEventHandler resolver = (sender, args) =>
             {
                 var name = new AssemblyName(args.Name).Name;
-                if (ShouldSkipAssembly(name!)) return null; 
+                if (ShouldSkipAssembly(name!)) return null;
 
                 var depPath = Path.Combine(assemblyDir, name + ".dll");
                 return File.Exists(depPath) ? Assembly.LoadFrom(depPath) : null;
@@ -212,7 +212,7 @@ public class EnvFileGenerator
 
             AppDomain.CurrentDomain.AssemblyResolve += resolver;
 
-            try 
+            try
             {
                 var assembly = Assembly.LoadFrom(fullPath);
                 Console.WriteLine($"  Scanning: {assembly.GetName().Name}");
@@ -255,9 +255,9 @@ public class EnvFileGenerator
         }
         catch (Exception ex)
         {
-             // Log only if it's potentially relevant
-             if(!ShouldSkipAssembly(assemblyPath))
-                 Console.WriteLine($"  Warning: Failed to scan {Path.GetFileName(assemblyPath)}: {ex.Message}");
+            // Log only if it's potentially relevant
+            if (!ShouldSkipAssembly(assemblyPath))
+                Console.WriteLine($"  Warning: Failed to scan {Path.GetFileName(assemblyPath)}: {ex.Message}");
         }
 
         return result;
@@ -269,7 +269,7 @@ public class EnvFileGenerator
         if (fileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             fileName = Path.GetFileNameWithoutExtension(fileName);
 
-        return ExcludedPrefixes.Any(prefix => 
+        return ExcludedPrefixes.Any(prefix =>
             fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -309,7 +309,7 @@ public class EnvFileGenerator
         return sb.ToString();
     }
 
-    private List<Type> DeduplicateTypes(List<Type> types) 
+    private List<Type> DeduplicateTypes(List<Type> types)
         => types.GroupBy(t => t.FullName).Select(g => g.First()).OrderBy(t => GetSectionName(t)).ToList();
 
     private List<PropertyInfo> GetConfigProperties(Type type)
@@ -371,8 +371,8 @@ public class EnvFileGenerator
         return prop?.GetValue(null)?.ToString() ?? type.Name.Replace("Options", "");
     }
 
-    private string GetEnvVariableName(string section, PropertyInfo prop) 
-        => $"{section.ToUpperInvariant()}__{prop.Name.ToUpperInvariant()}";
+    private string GetEnvVariableName(string section, PropertyInfo prop)
+        => $"{section.ToUpperInvariant().Replace(":", "__")}__{prop.Name.ToUpperInvariant()}";
 
     private string GetTypeName(Type type)
     {
@@ -381,11 +381,16 @@ public class EnvFileGenerator
         if (type.IsArray) return $"{GetTypeName(type.GetElementType()!)}[]";
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
             return $"List<{GetTypeName(type.GetGenericArguments()[0])}>";
-            
+
         return type.Name switch
         {
-            "String" => "string", "Int32" => "int", "Int64" => "long", "Boolean" => "bool",
-            "Double" => "double", "Decimal" => "decimal", _ => type.Name
+            "String" => "string",
+            "Int32" => "int",
+            "Int64" => "long",
+            "Boolean" => "bool",
+            "Double" => "double",
+            "Decimal" => "decimal",
+            _ => type.Name
         };
     }
 

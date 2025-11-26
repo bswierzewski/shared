@@ -118,7 +118,7 @@ public class UsersModule : IModule
     public async Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
     {
         await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
-        await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);     
+        await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);
     }
 
     /// <summary>
@@ -159,23 +159,9 @@ public class UsersModule : IModule
 
         return
         [
-            new Role(
-                "admin",
-                "Administrator",
-                Name,
-                permissions.AsReadOnly()),
-
-            new Role(
-                "editor",
-                "Editor",
-                Name,
-                permissions.Where(p => p.Name is "users.view" or "users.edit" or "users.assign_roles").ToList().AsReadOnly()),
-
-            new Role(
-                "viewer",
-                "Viewer",
-                Name,
-                permissions.Where(p => p.Name is "users.view").ToList().AsReadOnly())
+            new Role("admin", "Administrator", Name, permissions.AsReadOnly()),
+            new Role("editor", "Editor", Name, permissions.Where(p => p.Name is "users.view" or "users.edit" or "users.assign_roles").ToList().AsReadOnly()),
+            new Role("viewer", "Viewer", Name, permissions.Where(p => p.Name is "users.view").ToList().AsReadOnly())
         ];
     }
 }
