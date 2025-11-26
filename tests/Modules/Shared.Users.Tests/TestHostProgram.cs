@@ -41,6 +41,9 @@ public class TestHostProgram
         // Configure all modules (each calls its own Use method)
         app.UseModules(modules, builder.Configuration);
 
+        // Initialize all modules (each calls its own Initialize method)
+        app.Services.InitializeModules(modules).GetAwaiter().GetResult();
+
         app.Run();
     }
 }

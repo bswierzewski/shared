@@ -124,6 +124,14 @@ public class UsersModule : IModule
     }
 
     /// <summary>
+    /// Initializes the Users module by running database migrations.
+    /// </summary>
+    public async Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
+    {
+        await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// Configures all IOptions from the configuration based on their SectionName properties.
     /// </summary>
     private static void ConfigureOptionsFromConfiguration(IServiceCollection services, IConfiguration configuration)

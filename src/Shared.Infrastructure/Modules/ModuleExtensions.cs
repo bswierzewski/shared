@@ -53,4 +53,24 @@ public static class ModuleExtensions
 
         return app;
     }
+
+    /// <summary>
+    /// Initializes all modules by calling their Initialize() method.
+    /// Each module is responsible for its own initialization tasks (migrations, seeding, etc).
+    /// </summary>
+    /// <param name="serviceProvider">The service provider.</param>
+    /// <param name="modules">The modules to initialize.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous initialization operation.</returns>
+    public static async Task InitializeModules(
+        this IServiceProvider serviceProvider,
+        IEnumerable<IModule> modules,
+        CancellationToken cancellationToken = default)
+    {
+        foreach (var module in modules)
+        {
+            Console.WriteLine($"Initializing module '{module.Name}'...");
+            await module.Initialize(serviceProvider, cancellationToken);
+        }
+    }
 }
