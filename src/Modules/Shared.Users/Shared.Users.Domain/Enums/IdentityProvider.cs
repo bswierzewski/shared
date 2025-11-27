@@ -28,5 +28,10 @@ public enum IdentityProvider
     /// <summary>
     /// Other/unknown identity provider
     /// </summary>
-    Other = 5
+    Test = 5,
+
+    /// <summary>
+    /// Other/unknown identity provider
+    /// </summary>
+    Other = 6
 }

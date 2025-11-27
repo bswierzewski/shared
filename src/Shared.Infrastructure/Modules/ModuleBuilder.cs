@@ -99,7 +99,7 @@ public class ModuleBuilder(IServiceCollection services, IConfiguration configura
             foreach (var assembly in assemblies)
                 config.RegisterServicesFromAssembly(assembly);
                 
-            config.AddOpenRequestPreProcessor(typeof(LoggingBehavior<,>));
+            config.AddOpenRequestPreProcessor(typeof(LoggingBehavior<>));
             config.AddOpenBehavior(typeof(UnhandledExceptionBehavior<,>));
             config.AddOpenBehavior(typeof(AuthorizationBehavior<,>));
             config.AddOpenBehavior(typeof(ValidationBehavior<,>));
