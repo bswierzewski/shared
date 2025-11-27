@@ -14,11 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{D5E6
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{E5C8F1A2-B3D4-49E5-F6A7-B8C9D0E1F2A3}"
 	ProjectSection(SolutionItems) = preProject
-		.github\workflows\publish-shared-abstractions.yml = .github\workflows\publish-shared-abstractions.yml
-		.github\workflows\publish-shared-infrastructure-tests.yml = .github\workflows\publish-shared-infrastructure-tests.yml
-		.github\workflows\publish-shared-infrastructure.yml = .github\workflows\publish-shared-infrastructure.yml
-		.github\workflows\publish-shared-tools.yml = .github\workflows\publish-shared-tools.yml
-		.github\workflows\publish-shared-users.yml = .github\workflows\publish-shared-users.yml
+		.github\workflows\publish-all-shared-packages.yml = .github\workflows\publish-all-shared-packages.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{11111111-2222-3333-4444-555555555555}"
