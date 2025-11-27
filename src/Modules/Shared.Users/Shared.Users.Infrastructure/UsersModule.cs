@@ -1,4 +1,5 @@
 using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -9,6 +10,7 @@ using Npgsql;
 using Shared.Abstractions.Authorization;
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Extensions;
+using Shared.Infrastructure.Modules;
 using Shared.Infrastructure.Persistence.Migrations;
 using Shared.Users.Application;
 using Shared.Users.Application.Abstractions;
@@ -52,48 +54,23 @@ public class UsersModule : IModule
         // Register HttpContextAccessor (required for IUser implementation to access ClaimsPrincipal)
         services.AddHttpContextAccessor();
 
-        // Configure all IOptions from the module based on their SectionName
-        ConfigureOptions(services, configuration);
-
-        // Register NpgsqlDataSource for efficient connection pooling
-        services.AddKeyedSingleton(ModuleConstants.ModuleName, (sp, key) =>
-        {
-            var dbContextOptions = sp.GetRequiredService<IOptions<UsersDbContextOptions>>();
-            var connectionString = dbContextOptions.Value.ConnectionString
-                ?? throw new InvalidOperationException($"Connection string not found in section '{UsersDbContextOptions.SectionName}'");
-
-            return NpgsqlDataSource.Create(connectionString);
-        });
-
-        // Register DbContext
-        services.AddDbContext<UsersDbContext>((sp, options) =>
-        {
-            var dataSource = sp.GetRequiredKeyedService<NpgsqlDataSource>(ModuleConstants.ModuleName);
-
-            options.UseNpgsql(dataSource)
-                 .AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-        });
-
-        // Register DbContext abstractions
-        services.AddScoped<IUsersReadDbContext>(sp => sp.GetRequiredService<UsersDbContext>());
-        services.AddScoped<IUsersWriteDbContext>(sp => sp.GetRequiredService<UsersDbContext>());
+        // Register module services using fluent ModuleBuilder API
+        services.AddModule(configuration, Name)
+            .AddOptions((svc, config) =>
+            {
+                svc.ConfigureOptions<UsersDbContextOptions>(config);
+                svc.ConfigureOptions<ClerkOptions>(config);
+                svc.ConfigureOptions<SupabaseOptions>(config);
+            })
+            .AddPostgres<UsersDbContext, IUsersReadDbContext, IUsersWriteDbContext>(sp => sp.GetRequiredService<IOptions<UsersDbContextOptions>>().Value.ConnectionString)
+            .AddCQRS(typeof(ApplicationAssembly).Assembly, typeof(InfrastructureAssembly).Assembly)
+            .Build();
 
         // Register provisioning service
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
 
         // Register IUser implementation (reads from enriched ClaimsPrincipal)
         services.AddScoped<IUser, CurrentUserService>();
-
-        // Register MediatR handlers from Application and Infrastructure assemblies
-        services.AddMediatR(config =>
-        {
-            config.RegisterServicesFromAssembly(typeof(ApplicationAssembly).Assembly);
-            config.RegisterServicesFromAssembly(typeof(InfrastructureAssembly).Assembly);
-        });
-
-        // Register FluentValidation validators from Application and Infrastructure assemblies
-        services.AddValidatorsFromAssembly(typeof(ApplicationAssembly).Assembly);
-        services.AddValidatorsFromAssembly(typeof(InfrastructureAssembly).Assembly);
     }
 
     /// <summary>
@@ -119,17 +96,6 @@ public class UsersModule : IModule
     {
         await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
         await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Configures all IOptions from the configuration based on their SectionName properties.
-    /// </summary>
-    private static void ConfigureOptions(IServiceCollection services, IConfiguration configuration)
-    {
-        services
-            .ConfigureOptions<UsersDbContextOptions>(configuration)
-            .ConfigureOptions<ClerkOptions>(configuration)
-            .ConfigureOptions<SupabaseOptions>(configuration);
     }
 
     /// <summary>
