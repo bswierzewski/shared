@@ -31,15 +31,6 @@ public class MigrationService<TContext>(IServiceProvider serviceProvider)
             var contextName = typeof(TContext).Name;
             _logger.LogInformation("Checking migrations for {ContextName}...", contextName);
 
-            // Check if database exists; if not, create it first
-            var databaseExists = await context.Database.CanConnectAsync(cancellationToken);
-            if (!databaseExists)
-            {
-                _logger.LogInformation("Database does not exist for {ContextName}, creating...", contextName);
-                await context.Database.EnsureCreatedAsync(cancellationToken);
-            }
-
-            // Now safely get pending migrations
             var pendingMigrations = await context.Database.GetPendingMigrationsAsync(cancellationToken);
             if (pendingMigrations.Any())
             {
