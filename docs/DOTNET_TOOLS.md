@@ -19,11 +19,13 @@ The project uses GitHub Packages for distributing custom .NET tools. You need to
 Create a global `nuget.config` file in your user profile directory:
 
 **Windows:**
+
 ```powershell
 $configPath = "$env:APPDATA\NuGet\nuget.config"
 ```
 
 **macOS/Linux:**
+
 ```bash
 configPath=~/.config/NuGet/nuget.config
 ```
@@ -37,6 +39,7 @@ If you already have a `nuget.config` file, add or update the GitHub Packages sou
 You need a GitHub Personal Access Token (PAT) with `read:packages` permission.
 
 **Step 1: Generate a GitHub Personal Access Token**
+
 1. Go to https://github.com/settings/tokens
 2. Click "Generate new token (classic)"
 3. Select scopes: `read:packages`
@@ -45,6 +48,7 @@ You need a GitHub Personal Access Token (PAT) with `read:packages` permission.
 **Step 2: Configure NuGet with Your Token**
 
 **Windows (PowerShell):**
+
 ```powershell
 dotnet nuget add source `
   --username YOUR_GITHUB_USERNAME `
@@ -54,6 +58,7 @@ dotnet nuget add source `
 ```
 
 **macOS/Linux (Bash):**
+
 ```bash
 dotnet nuget add source \
   --username YOUR_GITHUB_USERNAME \
@@ -63,6 +68,7 @@ dotnet nuget add source \
 ```
 
 Replace:
+
 - `YOUR_GITHUB_USERNAME` - your GitHub username
 - `YOUR_GITHUB_TOKEN` - the PAT you generated in Step 1
 
@@ -71,7 +77,7 @@ Replace:
 #### First Time Installation
 
 ```bash
-dotnet tool install Shared.EnvFileGenerator --global --prerelease
+dotnet tool install Shared.EnvFileGenerator --prerelease
 ```
 
 This installs the tool globally so you can use it from any directory.
@@ -81,7 +87,7 @@ This installs the tool globally so you can use it from any directory.
 If you already have the tool installed, update it to the latest version:
 
 ```bash
-dotnet tool update Shared.EnvFileGenerator --global --prerelease
+dotnet tool update Shared.EnvFileGenerator --prerelease
 ```
 
 ### 4. Verify Installation

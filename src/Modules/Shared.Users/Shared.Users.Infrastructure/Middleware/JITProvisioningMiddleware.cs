@@ -107,12 +107,10 @@ public class JITProvisioningMiddleware
             // 4. LOAD ROLES/PERMISSIONS FROM DATABASE
             var userFull = await readContext.Users
                 .Where(u => u.Id == user.Id)
-                .Select(u => new
-                {
-                    u.Id,
-                    u.Roles,
-                    u.Permissions
-                })
+                .Include(u => u.Roles)
+                    .ThenInclude(r => r.Permissions)
+                .Include(u => u.Permissions)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             // 5. ADD TO CLAIMS
