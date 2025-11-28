@@ -26,12 +26,17 @@ public enum IdentityProvider
     Microsoft = 4,
 
     /// <summary>
-    /// Other/unknown identity provider
+    /// Supabase identity provider
     /// </summary>
-    Test = 5,
+    Supabase = 5,
+
+    /// <summary>
+    /// Test/local identity provider (for testing only)
+    /// </summary>
+    Test = 6,
 
     /// <summary>
     /// Other/unknown identity provider
     /// </summary>
-    Other = 6
+    Other = 7
 }

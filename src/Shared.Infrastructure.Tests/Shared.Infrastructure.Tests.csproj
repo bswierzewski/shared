@@ -32,6 +32,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Shared.Infrastructure\Shared.Infrastructure.csproj" />
 		<ProjectReference Include="..\..\src\Shared.Abstractions\Shared.Abstractions.csproj" />
+		<ProjectReference Include="..\..\src\Modules\Shared.Users\Shared.Users.Domain\Shared.Users.Domain.csproj" />
+		<ProjectReference Include="..\..\src\Modules\Shared.Users\Shared.Users.Application\Shared.Users.Application.csproj" />
 	</ItemGroup>
 
 	<!-- External Dependencies -->

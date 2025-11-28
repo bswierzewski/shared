@@ -1,3 +1,7 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Shared.Infrastructure.Extensions;
+using Shared.Infrastructure.Tests.Authentication;
 using Shared.Infrastructure.Tests.Core;
 
 namespace Shared.Users.Tests;
@@ -16,6 +20,14 @@ public class UsersTestFixture : IAsyncLifetime
         Context = await TestContext.CreateBuilder<Program>()
             .WithPostgreSql()
             .WithTablesIgnoredOnReset("Roles", "Permissions") // Preserve system/reference data
+            .WithServices((services, configuration) =>
+            {
+                // Register test user credentials from appsettings
+                services.ConfigureOptions<TestUserOptions>(configuration);
+
+                // Register Supabase token provider for authentication
+                services.AddSingleton<ITokenProvider, SupabaseTokenProvider>();
+            })
             .BuildAsync();
     }
 

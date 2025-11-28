@@ -1,4 +1,6 @@
-using Shared.Infrastructure.Tests.Builders;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Shared.Infrastructure.Tests.Authentication;
 using Shared.Infrastructure.Tests.Core;
 using Shared.Infrastructure.Tests.Extensions.Http;
 using Shared.Users.Infrastructure.Persistence;
@@ -11,14 +13,24 @@ namespace Shared.Users.Tests.EndToEnd.UseCase;
 /// with a new external provider or for the first time.
 /// </summary>
 [Collection("Users")]
-public class UserProvisioningTests
+public class UserProvisioningTests : IAsyncLifetime
 {
     private readonly TestContext _context;
+    private TestUserOptions _testUser = null!;
 
     public UserProvisioningTests(UsersTestFixture fixture)
     {
         _context = fixture.Context;
     }
+
+    public async Task InitializeAsync()
+    {
+        var userOptions = _context.Services.GetRequiredService<IOptions<TestUserOptions>>();
+        _testUser = userOptions.Value;
+        await Task.CompletedTask;
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
     /// <summary>
     /// Tests that a new user is automatically provisioned (created) when they authenticate for the first time.
     /// The JitProvisioningMiddleware calls UserProvisioningService.UpsertUserAsync() which creates the user.
@@ -30,8 +42,7 @@ public class UserProvisioningTests
         await _context.ResetDatabaseAsync();
 
         // Arrange
-        var email = "newuser@example.com";
-        var token = _context.GenerateUserToken(email);
+        var token = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token);
 
         // Act - Call any endpoint that requires authentication
@@ -39,12 +50,12 @@ public class UserProvisioningTests
 
         // Assert - Endpoint should succeed (or return 401 if no GetAll, but user is provisioned)
         // The important part is that JIT provisioning happens in the middleware
-        var userExists = await _context.UserExistsAsync(email);
+        var userExists = await _context.UserExistsAsync(_testUser.Email);
         userExists.Should().BeTrue();
 
         // Verify user was created with correct data
-        var user = await _context.GetUserFromDbAsync(email);
-        user.Email.Should().Be(email);
+        var user = await _context.GetUserFromDbAsync(_testUser.Email);
+        user.Email.Should().Be(_testUser.Email);
         user.IsActive.Should().BeTrue();
     }
 
@@ -56,32 +67,29 @@ public class UserProvisioningTests
     public async Task ExistingUser_ShouldNotBeDuplicated()
     {
         // Arrange - Provision user on first request
-        var email = "existing@example.com";
-        var externalUserId = "ext-123";
-
-        var token1 = _context.GenerateUserToken(email, externalUserId, "First Name");
+        var token1 = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token1);
 
         // Act - First request
         await _context.Client.GetAsync("/api/users");
-        var firstUser = await _context.GetUserFromDbAsync(email);
+        var firstUser = await _context.GetUserFromDbAsync(_testUser.Email);
         var firstUserId = firstUser.Id;
 
-        // Arrange - Second request with same email and external ID
-        var token2 = _context.GenerateUserToken(email, externalUserId, "Updated Name");
+        // Arrange - Second request with same email
+        var token2 = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token2);
 
         // Act - Second request
         await _context.Client.GetAsync("/api/users");
 
         // Assert - Same user should be updated, not duplicated
-        var secondUser = await _context.GetUserFromDbAsync(email);
+        var secondUser = await _context.GetUserFromDbAsync(_testUser.Email);
         secondUser.Id.Should().Be(firstUserId);
 
         // Verify only one user with this email exists
         var db = _context.GetRequiredService<UsersDbContext>();
         var allWithEmail = await db.Users
-            .Where(u => u.Email == email)
+            .Where(u => u.Email == _testUser.Email)
             .ToListAsync();
         allWithEmail.Should().HaveCount(1);
     }
@@ -94,50 +102,24 @@ public class UserProvisioningTests
     public async Task ExistingUser_LastLoginShouldBeUpdated()
     {
         // Arrange - Create user
-        var email = "login@example.com";
-        var token1 = _context.GenerateUserToken(email);
+        var token1 = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token1);
         await _context.Client.GetAsync("/api/users");
 
-        var user1 = await _context.GetUserFromDbAsync(email);
+        var user1 = await _context.GetUserFromDbAsync(_testUser.Email);
         user1.LastLoginAt.Should().NotBeNull();
         var firstLogin = user1.LastLoginAt!.Value;
 
         // Act - Wait a bit and authenticate again
         await Task.Delay(100);
-        var token2 = _context.GenerateUserToken(email);
+        var token2 = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token2);
         await _context.Client.GetAsync("/api/users");
 
         // Assert - Last login should be updated
-        var user2 = await _context.GetUserFromDbAsync(email);
+        var user2 = await _context.GetUserFromDbAsync(_testUser.Email);
         user2.LastLoginAt.Should().NotBeNull();
         user2.LastLoginAt!.Value.Should().BeAfter(firstLogin);
-    }
-
-    /// <summary>
-    /// Tests that expired tokens are still processed for JIT provisioning.
-    /// Test auth disables lifetime validation, so expired tokens should work.
-    /// </summary>
-    [Fact]
-    public async Task ExpiredToken_ShouldStillProvisionUser()
-    {
-        // Arrange - Create token with expiry in the past
-        var email = "expired@example.com";
-        var token = new JwtTokenBuilder()
-            .WithEmail(email)
-            .WithSubject(Guid.NewGuid().ToString())
-            .WithExpiration(DateTime.UtcNow.AddHours(-1)) // Expired 1 hour ago
-            .Build();
-
-        _context.Client.WithBearerToken(token);
-
-        // Act - Make authenticated request with expired token
-        await _context.Client.GetAsync("/api/users");
-
-        // Assert - User should still be provisioned despite expired token
-        var userExists = await _context.UserExistsAsync(email);
-        userExists.Should().BeTrue();
     }
 
     /// <summary>
@@ -148,14 +130,11 @@ public class UserProvisioningTests
     public async Task SameEmail_DifferentProvider_ShouldLinkProviders()
     {
         // Arrange - Create user with first provider
-        var email = "multiauth@example.com";
-        var supabaseId = "supabase-123";
-
-        var token1 = _context.GenerateUserToken(email, supabaseId);
+        var token1 = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token1);
         await _context.Client.GetAsync("/api/users");
 
-        var user1 = await _context.GetUserFromDbAsync(email);
+        var user1 = await _context.GetUserFromDbAsync(_testUser.Email);
         var providers1 = await _context.GetRequiredService<UsersDbContext>()
             .Users
             .Where(u => u.Id == user1.Id)
@@ -164,14 +143,13 @@ public class UserProvisioningTests
 
         providers1.Should().HaveCount(1);
 
-        // Act - Authenticate with different external ID (simulating different provider)
-        var clerkId = "clerk-456";
-        var token2 = _context.GenerateUserToken(email, clerkId);
+        // Act - Authenticate again
+        var token2 = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token2);
         await _context.Client.GetAsync("/api/users");
 
         // Assert - Same user should now have two external providers linked
-        var user2 = await _context.GetUserFromDbAsync(email);
+        var user2 = await _context.GetUserFromDbAsync(_testUser.Email);
         user2.Id.Should().Be(user1.Id);
 
         var providersAfter = await _context.GetRequiredService<UsersDbContext>()
@@ -190,15 +168,14 @@ public class UserProvisioningTests
     public async Task NewUser_ShouldBeActiveByDefault()
     {
         // Arrange
-        var email = "active@example.com";
-        var token = _context.GenerateUserToken(email);
+        var token = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token);
 
         // Act
         await _context.Client.GetAsync("/api/users");
 
         // Assert
-        var user = await _context.GetUserFromDbAsync(email);
+        var user = await _context.GetUserFromDbAsync(_testUser.Email);
         user.IsActive.Should().BeTrue();
     }
 

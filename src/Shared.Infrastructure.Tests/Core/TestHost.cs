@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Infrastructure.Tests.Infrastructure.Containers;
 using Shared.Infrastructure.Tests.Infrastructure.Database;
@@ -16,14 +17,14 @@ namespace Shared.Infrastructure.Tests.Core;
 internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost where TProgram : class
 {
     private readonly ITestContainer? _container;
-    private readonly List<Action<IServiceCollection>> _serviceConfigurations = new();
+    private readonly List<Action<IServiceCollection, IConfiguration>> _serviceConfigurations = new();
     private readonly List<Action<IWebHostBuilder>> _hostConfigurations = new();
     private DatabaseResetStrategy? _resetStrategy;
     private string _environment = "Testing";
 
     public TestHost(
         ITestContainer? container,
-        IEnumerable<Action<IServiceCollection>> serviceConfigurations,
+        IEnumerable<Action<IServiceCollection, IConfiguration>> serviceConfigurations,
         IEnumerable<Action<IWebHostBuilder>> hostConfigurations,
         string environment)
     {
@@ -66,7 +67,7 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
             configure(builder);
         }
 
-        builder.ConfigureServices(services =>
+        builder.ConfigureServices((context, services) =>
         {
             // Replace all NpgsqlDataSource instances with test versions if container is configured
             if (_container != null)
@@ -81,10 +82,10 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
             // Register database manager for reset operations
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
 
-            // Apply custom service configurations
+            // Apply custom service configurations with access to configuration
             foreach (var configure in _serviceConfigurations)
             {
-                configure(services);
+                configure(services, context.Configuration);
             }
         });
     }

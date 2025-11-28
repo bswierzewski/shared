@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Shared.Infrastructure.Tests.Builders;
 using Shared.Infrastructure.Tests.Core;
 using Shared.Users.Domain.Aggregates;
 using Shared.Users.Infrastructure.Persistence;
@@ -12,36 +11,6 @@ namespace Shared.Users.Tests;
 /// </summary>
 public static class UsersTestExtensions
 {
-    /// <summary>
-    /// Generates a test JWT token with specified claims.
-    /// Uses JwtTokenBuilder to create a valid JWT structure.
-    /// </summary>
-    /// <param name="context">The test context.</param>
-    /// <param name="email">Email claim (required)</param>
-    /// <param name="userId">Subject (sub) claim - external user ID. Defaults to random GUID.</param>
-    /// <param name="displayName">Display name claim. Optional.</param>
-    /// <param name="additionalClaims">Additional custom claims. Optional.</param>
-    /// <returns>A valid JWT token string</returns>
-    public static string GenerateUserToken(
-        this TestContext context,
-        string email,
-        string? userId = null,
-        string? displayName = null,
-        Dictionary<string, string>? additionalClaims = null)
-    {
-        var builder = new JwtTokenBuilder()
-            .WithEmail(email)
-            .WithSubject(userId ?? Guid.NewGuid().ToString());
-
-        if (!string.IsNullOrEmpty(displayName))
-            builder.WithDisplayName(displayName);
-
-        if (additionalClaims != null)
-            foreach (var claim in additionalClaims)
-                builder.WithClaim(claim.Key, claim.Value);
-
-        return builder.Build();
-    }
 
     /// <summary>
     /// Retrieves a user from the database by email.

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Infrastructure.Tests.Core;
 using Shared.Infrastructure.Tests.Infrastructure.Containers;
@@ -12,7 +13,7 @@ namespace Shared.Infrastructure.Tests.Builders;
 /// <typeparam name="TProgram">The Program or Startup class of the application under test.</typeparam>
 internal class TestHostBuilder<TProgram> where TProgram : class
 {
-    private readonly List<Action<IServiceCollection>> _serviceConfigurations = new();
+    private readonly List<Action<IServiceCollection, IConfiguration>> _serviceConfigurations = new();
     private readonly List<Action<IWebHostBuilder>> _hostConfigurations = new();
     private ITestContainer? _container;
     private string _environment = "Testing";
@@ -36,9 +37,9 @@ internal class TestHostBuilder<TProgram> where TProgram : class
     }
 
     /// <summary>
-    /// Adds a service configuration action.
+    /// Adds a service configuration action with access to configuration.
     /// </summary>
-    public TestHostBuilder<TProgram> WithServices(Action<IServiceCollection> configure)
+    public TestHostBuilder<TProgram> WithServices(Action<IServiceCollection, IConfiguration> configure)
     {
         _serviceConfigurations.Add(configure);
         return this;

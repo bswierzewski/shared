@@ -12,7 +12,7 @@ public class SupabaseOptions : IOptions
     /// <summary>
     /// The configuration section name for Supabase options.
     /// </summary>
-    public static string SectionName => $"Modules:{ModuleConstants.ModuleName}:Authentication:Supabase";
+    public static string SectionName => $"Modules:{ModuleConstants.ModuleName}:Supabase";
 
     /// <summary>
     /// The Supabase project URL (e.g., https://your-project.supabase.co).
@@ -36,4 +36,10 @@ public class SupabaseOptions : IOptions
     /// </summary>
     [Required(ErrorMessage = "JwtSecret is required")]
     public string JwtSecret { get; set; } = null!;
+
+    /// <summary>
+    /// The anonymous API key for Supabase REST API authentication.
+    /// This is the public anon key from your Supabase project settings.
+    /// </summary>
+    public string? ApiKey { get; set; }
 }

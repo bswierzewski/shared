@@ -12,7 +12,7 @@ builder.Services.AddSingleton<IReadOnlyCollection<IModule>>(modules.AsReadOnly()
 builder.Services.RegisterModules(modules, builder.Configuration);
 
 builder.Services.AddAuthentication()
-    .AddTestJwtBearer();
+    .AddSupabaseJwtBearer();
 builder.Services.AddAuthorization();
 
 var app = builder.Build();

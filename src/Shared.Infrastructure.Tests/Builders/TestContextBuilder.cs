@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Modules;
@@ -27,7 +28,7 @@ namespace Shared.Infrastructure.Tests.Builders;
 /// </example>
 public sealed class TestContextBuilder<TProgram> where TProgram : class
 {
-    private readonly List<Action<IServiceCollection>> _serviceConfigurations = new();
+    private readonly List<Action<IServiceCollection, IConfiguration>> _serviceConfigurations = new();
     private readonly List<Action<IWebHostBuilder>> _hostConfigurations = new();
     private readonly DatabaseResetStrategy _resetStrategy = new();
     private string _environment = "Testing";
@@ -62,21 +63,19 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
     }
 
     /// <summary>
-    /// Configures services for the test application.
-    /// Use extension methods like ReplaceMock&lt;T&gt;() for common scenarios.
+    /// Configures services for the test application with access to configuration.
     /// </summary>
-    /// <param name="configure">Action to configure the service collection.</param>
+    /// <param name="configure">Action to configure the service collection with access to IConfiguration.</param>
     /// <example>
     /// <code>
-    /// .WithServices(services =>
+    /// .WithServices((services, configuration) =>
     /// {
-    ///     var mock = services.ReplaceMock&lt;IEmailService&gt;();
-    ///     mock.Setup(x => x.SendAsync(It.IsAny&lt;Email&gt;())).ReturnsAsync(true);
+    ///     services.Configure&lt;MyOptions&gt;(configuration.GetSection("MySection"));
     /// })
     /// </code>
     /// </example>
     public TestContextBuilder<TProgram> WithServices(
-        Action<IServiceCollection> configure)
+        Action<IServiceCollection, IConfiguration> configure)
     {
         _serviceConfigurations.Add(configure);
         return this;
