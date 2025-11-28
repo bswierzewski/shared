@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Infrastructure.Extensions;
 using Shared.Infrastructure.Tests.Authentication;
@@ -19,7 +18,6 @@ public class UsersTestFixture : IAsyncLifetime
     {
         Context = await TestContext.CreateBuilder<Program>()
             .WithPostgreSql()
-            .WithTablesIgnoredOnReset("Roles", "Permissions") // Preserve system/reference data
             .WithServices((services, configuration) =>
             {
                 // Register test user credentials from appsettings
@@ -33,3 +31,13 @@ public class UsersTestFixture : IAsyncLifetime
 
     public Task DisposeAsync() => Context?.DisposeAsync().AsTask() ?? Task.CompletedTask;
 }
+
+/// <summary>
+/// xUnit collection definition for sharing the UsersTestFixture across tests.
+/// This allows all tests in this collection to share a single test context, container, and database.
+/// </summary>
+[CollectionDefinition("Users")]
+public class UsersCollection : ICollectionFixture<UsersTestFixture>
+{
+}
+

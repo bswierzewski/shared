@@ -50,13 +50,14 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
+      - name: Create .env file for tests
+        working-directory: ./tests/Modules/Shared.Users.Tests.EndToEnd
+        run: |
+          echo "${{ vars.ENV_FILE }}" > .env
+          echo "${{ secrets.ENV_FILE }}" >> .env
+
       - name: Run Shared.Users Tests
         run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Users.Tests.EndToEnd
-        env:
-          Modules__Users__ConnectionString: "Server=localhost;Database=shared_users_test;User Id=postgres;Password=postgres"
-          Logging__LogLevel__Default: "Warning"
-          Logging__LogLevel__Microsoft: "Warning"
-          Logging__LogLevel__Microsoft.Hosting.Lifetime: "Warning"
 
       - name: Pack all packages
         run: |

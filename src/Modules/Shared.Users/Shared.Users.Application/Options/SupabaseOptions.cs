@@ -23,21 +23,6 @@ public class SupabaseOptions : IOptions
     public string Authority { get; set; } = null!;
 
     /// <summary>
-    /// The audience for JWT token validation (optional).
-    /// If not set, audience validation will be disabled.
-    /// Supabase typically uses 'authenticated' as the audience.
-    /// </summary>
-    public string? Audience { get; set; }
-
-    /// <summary>
-    /// The JWT secret key for HS256 signature validation.
-    /// This is the secret key from your Supabase project settings.
-    /// Must be kept secret and stored securely (e.g., in Azure Key Vault).
-    /// </summary>
-    [Required(ErrorMessage = "JwtSecret is required")]
-    public string JwtSecret { get; set; } = null!;
-
-    /// <summary>
     /// The anonymous API key for Supabase REST API authentication.
     /// This is the public anon key from your Supabase project settings.
     /// </summary>

@@ -9,7 +9,7 @@ namespace Shared.Infrastructure.Tests.Infrastructure.Database;
 /// </summary>
 public class DatabaseResetStrategy
 {
-    private readonly List<string> _tablesToIgnore = new() { "__EFMigrationsHistory" };
+    private readonly List<string> _tablesToIgnore = new() { "__EFMigrationsHistory", "Roles", "Permissions" };
     private Respawner? _respawner;
     private NpgsqlConnection? _connection;
 

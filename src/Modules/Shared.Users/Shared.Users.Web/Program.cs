@@ -1,6 +1,6 @@
 using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Modules;
-using Shared.Users.Infrastructure.Extensions.JwtBearers;
+using Shared.Users.Infrastructure.Extensions.Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
 

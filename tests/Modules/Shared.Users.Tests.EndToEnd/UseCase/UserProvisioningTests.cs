@@ -123,13 +123,13 @@ public class UserProvisioningTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Tests that multiple external providers can be linked to the same user.
-    /// When a user authenticates with a different provider but same email, they should be linked.
+    /// Tests that when a user authenticates multiple times with the same provider and email,
+    /// they are not duplicated and maintain the same external provider count.
     /// </summary>
     [Fact]
-    public async Task SameEmail_DifferentProvider_ShouldLinkProviders()
+    public async Task SameEmail_SameProvider_ShouldNotDuplicate()
     {
-        // Arrange - Create user with first provider
+        // Arrange - Create user
         var token1 = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token1);
         await _context.Client.GetAsync("/api/users");
@@ -143,12 +143,12 @@ public class UserProvisioningTests : IAsyncLifetime
 
         providers1.Should().HaveCount(1);
 
-        // Act - Authenticate again
+        // Act - Authenticate again with same credentials
         var token2 = await _context.GetTokenAsync(_testUser.Email, _testUser.Password);
         _context.Client.WithBearerToken(token2);
         await _context.Client.GetAsync("/api/users");
 
-        // Assert - Same user should now have two external providers linked
+        // Assert - Same user should still have only one provider (no duplication)
         var user2 = await _context.GetUserFromDbAsync(_testUser.Email);
         user2.Id.Should().Be(user1.Id);
 
@@ -158,7 +158,7 @@ public class UserProvisioningTests : IAsyncLifetime
             .Select(u => u.ExternalProviders)
             .FirstAsync();
 
-        providersAfter.Should().HaveCount(2);
+        providersAfter.Should().HaveCount(1);
     }
 
     /// <summary>

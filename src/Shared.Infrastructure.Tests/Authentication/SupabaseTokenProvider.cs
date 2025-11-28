@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Shared.Users.Application.Options;
@@ -15,6 +16,7 @@ public class SupabaseTokenProvider : ITokenProvider
     private readonly SupabaseOptions _supabaseOptions;
     private readonly TestUserOptions _userOptions;
     private readonly HttpClient _httpClient;
+    private readonly Dictionary<string, (string token, DateTime expiresAt)> _tokenCache = new();
 
     /// <summary>
     /// Gets the identity provider type (Supabase).
@@ -44,19 +46,19 @@ public class SupabaseTokenProvider : ITokenProvider
     /// Authenticates with Supabase using configured test user credentials.
     /// Parameters are ignored - uses email and password from configuration.
     /// </summary>
-    /// <param name="login">Ignored - uses email from configuration</param>
+    /// <param name="email">Ignored - uses email from configuration</param>
     /// <param name="password">Ignored - uses password from configuration</param>
     /// <returns>Access token from Supabase auth endpoint</returns>
     /// <exception cref="InvalidOperationException">Thrown if authentication fails or token cannot be parsed</exception>
-    public async Task<string> GetTokenAsync(string login, string password)
+    public async Task<string> GetTokenAsync(string email, string password)
     {
+        // Check if token is cached and still valid
+        if (_tokenCache.TryGetValue(email, out var cached) && cached.expiresAt > DateTime.UtcNow)        
+            return cached.token;        
+
         var tokenEndpoint = $"{_supabaseOptions.Authority.TrimEnd('/')}/auth/v1/token?grant_type=password";
 
-        var request = new
-        {
-            email = _userOptions.Email,
-            password = _userOptions.Password
-        };
+        var request = new { email, password };
 
         var content = new StringContent(
             JsonConvert.SerializeObject(request),
@@ -83,7 +85,12 @@ public class SupabaseTokenProvider : ITokenProvider
                     "No access_token in Supabase response. Check credentials and Supabase project configuration.");
             }
 
-            return (string)tokenResponse.access_token;
+            var token = (string)tokenResponse.access_token;
+            var expiresAt = GetTokenExpiration(token);
+
+            _tokenCache[email] = (token, expiresAt);
+
+            return token;
         }
         catch (HttpRequestException ex)
         {
@@ -94,6 +101,24 @@ public class SupabaseTokenProvider : ITokenProvider
         {
             throw new InvalidOperationException(
                 $"Failed to parse Supabase token response. Invalid JSON response from server.", ex);
+        }
+    }
+
+    private DateTime GetTokenExpiration(string token)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var expiration = jwtToken.ValidTo;
+
+            // Return expiration time minus 30 seconds buffer to refresh before actual expiration
+            return expiration.AddSeconds(-30);
+        }
+        catch
+        {
+            // If we can't parse the token, assume it expires in 1 hour
+            return DateTime.UtcNow.AddHours(1);
         }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Shared.Infrastructure.Tests.Infrastructure.Containers;
 using Shared.Infrastructure.Tests.Infrastructure.Database;
 using Shared.Infrastructure.Tests.Extensions.Npgsql;
@@ -60,6 +61,14 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(_environment);
+
+        // Configure logging to output to console during tests
+        builder.ConfigureLogging((context, logging) =>
+        {
+            logging.ClearProviders();
+            logging.AddConsole();
+            logging.SetMinimumLevel(LogLevel.Warning);
+        });
 
         // Apply custom host configurations
         foreach (var configure in _hostConfigurations)
