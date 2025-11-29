@@ -8,7 +8,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <!-- NuGet Metadata -->
-    <PackageId>Shared.Users</PackageId>
+    <PackageId>Shared.Users.Infrastructure</PackageId>
     <Version>1.0.0</Version>
     <Title>Shared Users Module</Title>
     <Description>User management module with role-based access control (RBAC), JWT authentication, and just-in-time provisioning capabilities.</Description>
@@ -27,8 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shared.Users.Application\Shared.Users.Application.csproj" PrivateAssets="all" />
-    <ProjectReference Include="..\Shared.Users.Domain\Shared.Users.Domain.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Shared.Users.Application\Shared.Users.Application.csproj" />
+    <ProjectReference Include="..\Shared.Users.Domain\Shared.Users.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
   </ItemGroup>
 

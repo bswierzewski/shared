@@ -59,12 +59,17 @@ jobs:
       - name: Run Shared.Users Tests
         run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Users.Tests.EndToEnd
 
+      - name: Remove .env file
+        run: rm -f ./tests/Modules/Shared.Users.Tests.EndToEnd/.env
+
       - name: Pack all packages
         run: |
           VERSION=1.0.0-build.${{ github.run_number }}
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Abstractions
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Infrastructure
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Tools/Shared.EnvFileGenerator
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Domain
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Application
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Infrastructure
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Infrastructure.Tests
 
@@ -95,10 +100,26 @@ jobs:
           min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"
 
-      - name: Delete old Shared.Users packages
+      - name: Delete old Shared.Users.Domain packages
         uses: actions/delete-package-versions@v4
         with:
-          package-name: "Shared.Users"
+          package-name: "Shared.Users.Domain"
+          package-type: "nuget"
+          min-versions-to-keep: 1
+          delete-only-pre-release-versions: "true"
+
+      - name: Delete old Shared.Users.Application packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: "Shared.Users.Application"
+          package-type: "nuget"
+          min-versions-to-keep: 1
+          delete-only-pre-release-versions: "true"
+
+      - name: Delete old Shared.Users.Infrastructure packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: "Shared.Users.Infrastructure"
           package-type: "nuget"
           min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"

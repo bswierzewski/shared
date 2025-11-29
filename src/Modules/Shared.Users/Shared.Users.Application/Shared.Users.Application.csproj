@@ -6,7 +6,25 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- NuGet Metadata -->
+    <PackageId>Shared.Users.Application</PackageId>
+    <Version>1.0.0</Version>
+    <Title>Shared Users Application</Title>
+    <Description>Application layer for user management with commands, queries, and handlers.</Description>
+    <Authors>bswierzewski</Authors>
+    <Company>bswierzewski</Company>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>users;application;cqrs;user-management;identity</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Shared.Users.Domain\Shared.Users.Domain.csproj" />
