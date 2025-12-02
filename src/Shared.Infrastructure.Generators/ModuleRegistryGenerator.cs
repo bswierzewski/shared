@@ -202,7 +202,16 @@ public class ModuleRegistryGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private readonly record struct GenerationInfo(string Namespace);
-    private readonly record struct ModuleInfo(string TypeName);
+    private readonly struct GenerationInfo
+    {
+        public GenerationInfo(string ns) => Namespace = ns;
+        public string Namespace { get; }
+    }
+
+    private readonly struct ModuleInfo
+    {
+        public ModuleInfo(string typeName) => TypeName = typeName;
+        public string TypeName { get; }
+    }
 }
 
