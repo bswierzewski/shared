@@ -35,12 +35,12 @@ dotnet tool install -g Shared.EnvFileGenerator
 ```csharp
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Shared.Infrastructure.Modules;
+using Shared.Abstractions.Modules;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load modular architecture modules
-var modules = ModuleLoader.LoadModules();
+// Load modules from auto-generated registry (compile-time discovery)
+var modules = ModuleRegistry.GetModules();
 
 // Register all modules
 builder.Services.RegisterModules(modules, builder.Configuration);
@@ -58,6 +58,10 @@ app.UseModules(modules, builder.Configuration);
 await app.Services.InitializeModules(modules);
 
 app.Run();
+
+// [GenerateModuleRegistry] triggers source generator
+[GenerateModuleRegistry]
+public partial class Program { }
 ```
 
 ---
@@ -348,16 +352,20 @@ var result = Result.Success(5)
 
 #### Modular Architecture Support
 
-**ModuleLoader**
+**ModuleRegistry (Source Generator - Recommended)**
 
-- Discovers all IModule implementations via reflection
-- Supports assembly exclusion by prefix (System._, Microsoft._, etc.)
+- Compile-time module discovery via Source Generator
+- No runtime reflection overhead
+- AOT/trimming compatible
 - Example:
 
 ```csharp
-var modules = ModuleLoader.LoadModules();
-// Or with custom exclusions
-var modules = ModuleLoader.LoadModules(exclusionPrefixes: new[] { "Legacy." });
+// Add [GenerateModuleRegistry] to Program class
+[GenerateModuleRegistry]
+public partial class Program { }
+
+// Use generated registry
+var modules = ModuleRegistry.GetModules();
 ```
 
 **ModuleExtensions**
@@ -1160,7 +1168,7 @@ var config = new ConfigurationBuilder()
 ### "No modules found" during application startup
 
 - Ensure module class implements `IModule` interface
-- Verify module assembly is loaded (check ModuleLoader exclusions)
+- Verify `[GenerateModuleRegistry]` attribute is on Program class
 - Confirm module class is public and not abstract
 
 ### Domain events not being published

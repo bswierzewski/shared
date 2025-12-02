@@ -16,13 +16,14 @@ namespace Shared.Infrastructure.Tests.Builders;
 /// <typeparam name="TProgram">The Program or Startup class of the application under test.</typeparam>
 /// <example>
 /// <code>
+/// // Create container in fixture or test
+/// var container = new PostgreSqlTestContainer();
+/// await container.StartAsync();
+/// 
+/// // Build context using container
 /// var context = await TestContext.CreateBuilder&lt;Program&gt;()
-///     .WithPostgreSql()
-///     .WithTablesIgnoredOnReset("Roles", "Permissions")
-///     .WithServices(services =&gt;
-///     {
-///         services.ReplaceMock&lt;IEmailService&gt;();
-///     })
+///     .WithContainer(container)
+///     .WithServices((services, configuration) =&gt; { ... })
 ///     .BuildAsync();
 /// </code>
 /// </example>
@@ -38,15 +39,29 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
     internal TestContextBuilder() { }
 
     /// <summary>
-    /// Configures the test to use a PostgreSQL test container.
-    /// The container will be started during BuildAsync().
+    /// Configures the test to use a PostgreSQL container.
+    /// The container lifecycle must be managed externally (start/stop in fixture or test).
     /// </summary>
-    /// <param name="configure">Optional configuration for the PostgreSQL container.</param>
-    public TestContextBuilder<TProgram> WithPostgreSql(
-        Action<PostgreSqlTestContainer>? configure = null)
+    /// <param name="container">The container instance (must be started before BuildAsync).</param>
+    /// <example>
+    /// <code>
+    /// // In fixture:
+    /// public class MyFixture : IAsyncLifetime
+    /// {
+    ///     public PostgreSqlTestContainer Container { get; } = new();
+    ///     public async Task InitializeAsync() =&gt; await Container.StartAsync();
+    ///     public async Task DisposeAsync() =&gt; await Container.StopAsync();
+    /// }
+    /// 
+    /// // In test:
+    /// _context = await TestContext.CreateBuilder&lt;Program&gt;()
+    ///     .WithContainer(fixture.Container)
+    ///     .BuildAsync();
+    /// </code>
+    /// </example>
+    public TestContextBuilder<TProgram> WithContainer(ITestContainer container)
     {
-        var container = new PostgreSqlTestContainer();
-        configure?.Invoke(container);
+        ArgumentNullException.ThrowIfNull(container, nameof(container));
         _container = container;
         return this;
     }
@@ -68,7 +83,7 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
     /// <param name="configure">Action to configure the service collection with access to IConfiguration.</param>
     /// <example>
     /// <code>
-    /// .WithServices((services, configuration) =>
+    /// .WithServices((services, configuration) =&gt;
     /// {
     ///     services.Configure&lt;MyOptions&gt;(configuration.GetSection("MySection"));
     /// })
@@ -116,25 +131,23 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
 
     /// <summary>
     /// Builds and initializes the test context.
-    /// This performs the following steps in order:
-    /// <list type="number">
-    /// <item>Start the test container (if configured)</item>
-    /// <item>Build the test host</item>
-    /// <item>Initialize modules (migrations, permissions sync, etc.)</item>
-    /// <item>Initialize database reset strategy (Respawn)</item>
-    /// <item>Reset database to clean state</item>
-    /// </list>
+    /// Container must be started before calling this method.
     /// </summary>
     /// <returns>A fully initialized test context ready for use.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if no container is configured.</exception>
     public async Task<TestContext> BuildAsync()
     {
-        // Step 1: Start container
-        if (_container != null)
+        if (_container == null)
         {
-            await _container.StartAsync();
+            throw new InvalidOperationException(
+                "No container configured. Call WithContainer() before BuildAsync(). " +
+                "Example: .WithContainer(fixture.Container)");
         }
 
-        // Step 2: Build host
+        // Get connection string from container
+        var connectionString = _container.GetConnectionString();
+
+        // Build host
         var hostBuilder = new TestHostBuilder<TProgram>()
             .WithEnvironment(_environment)
             .WithContainer(_container);
@@ -153,25 +166,20 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
 
         var host = hostBuilder.Build();
 
-        // Step 3: Initialize modules (if enabled)
-        // This runs migrations, syncs permissions, etc.
+        // Initialize modules (migrations, permissions sync, etc.)
         if (_autoInitializeModules)
         {
             var modules = host.Services.GetRequiredService<IEnumerable<IModule>>();
             await host.Services.InitializeModules(modules);
         }
 
-        // Step 4: Initialize database reset strategy
-        // Respawner needs the database schema to exist, so this must happen after migrations
-        if (_container != null)
-        {
-            await _resetStrategy.InitializeAsync(_container.GetConnectionString());
-        }
+        // Initialize database reset strategy (Respawn)
+        await _resetStrategy.InitializeAsync(connectionString);
 
         // Set the reset strategy on the host for later use
         host.SetResetStrategy(_resetStrategy);
 
-        // Step 5: Reset database to clean state
+        // Reset database to clean state
         await host.ResetDatabaseAsync();
 
         return new TestContext(host);

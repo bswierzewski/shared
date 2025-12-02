@@ -13,5 +13,11 @@
     <ProjectReference Include="..\Shared.Users.Infrastructure\Shared.Users.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup Label="Source Generators">
+    <ProjectReference Include="..\..\..\Shared.Infrastructure.Generators\Shared.Infrastructure.Generators.csproj" 
+                      OutputItemType="Analyzer" 
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
   
 </Project>

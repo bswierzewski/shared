@@ -1,5 +1,6 @@
 using Shared.Infrastructure.Tests.Builders;
 using Shared.Infrastructure.Tests.Core;
+using Shared.Infrastructure.Tests.Infrastructure.Containers;
 
 namespace Shared.Infrastructure.Tests.Fixtures;
 
@@ -13,17 +14,23 @@ namespace Shared.Infrastructure.Tests.Fixtures;
 /// // Define a fixture for your module
 /// public class UsersTestFixture : IAsyncLifetime
 /// {
+///     public PostgreSqlTestContainer Container { get; } = new();
 ///     public TestContext Context { get; private set; } = null!;
 ///
 ///     public async Task InitializeAsync()
 ///     {
-///         Context = await TestContext.CreateBuilder&lt;TestHostProgram&gt;()
-///             .WithPostgreSql()
+///         await Container.StartAsync();
+///         Context = await TestContext.CreateBuilder&lt;Program&gt;()
+///             .WithContainer(Container)
 ///             .WithTablesIgnoredOnReset("Roles", "Permissions")
 ///             .BuildAsync();
 ///     }
 ///
-///     public Task DisposeAsync() => Context.DisposeAsync().AsTask();
+///     public async Task DisposeAsync()
+///     {
+///         await Context.DisposeAsync();
+///         await Container.StopAsync();
+///     }
 /// }
 ///
 /// // Define a collection
@@ -32,14 +39,9 @@ namespace Shared.Infrastructure.Tests.Fixtures;
 ///
 /// // Use in tests
 /// [Collection("Users")]
-/// public class UserEndpointsTests
+/// public class UserEndpointsTests(UsersTestFixture fixture)
 /// {
-///     private readonly TestContext _context;
-///
-///     public UserEndpointsTests(UsersTestFixture fixture)
-///     {
-///         _context = fixture.Context;
-///     }
+///     private readonly TestContext _context = fixture.Context;
 ///
 ///     [Fact]
 ///     public async Task GetUser_ReturnsUser()
@@ -53,6 +55,11 @@ namespace Shared.Infrastructure.Tests.Fixtures;
 public class TestHostFixture<TProgram> : IAsyncLifetime, ITestHostFixture where TProgram : class
 {
     private readonly Func<TestContextBuilder<TProgram>, TestContextBuilder<TProgram>> _configure;
+
+    /// <summary>
+    /// Gets the shared PostgreSQL container.
+    /// </summary>
+    public PostgreSqlTestContainer Container { get; } = new();
 
     /// <summary>
     /// Gets the shared test context.
@@ -70,52 +77,30 @@ public class TestHostFixture<TProgram> : IAsyncLifetime, ITestHostFixture where 
     }
 
     /// <summary>
-    /// Initializes the fixture by building the test context.
+    /// Initializes the fixture by starting the container and building the test context.
     /// Called once before all tests in the collection.
     /// </summary>
     public async Task InitializeAsync()
     {
-        var builder = TestContext.CreateBuilder<TProgram>();
+        await Container.StartAsync();
+
+        var builder = TestContext.CreateBuilder<TProgram>()
+            .WithContainer(Container);
         builder = _configure(builder);
         Context = await builder.BuildAsync();
     }
 
     /// <summary>
-    /// Disposes the fixture by disposing the test context.
+    /// Disposes the fixture by disposing the test context and stopping the container.
     /// Called once after all tests in the collection complete.
     /// </summary>
-    public Task DisposeAsync() => Context.DisposeAsync().AsTask();
-}
-
-/// <summary>
-/// Base fixture with PostgreSQL for common scenarios.
-/// Provides a pre-configured PostgreSQL test container.
-/// </summary>
-/// <typeparam name="TProgram">The Program or Startup class of the application under test.</typeparam>
-/// <example>
-/// <code>
-/// public class MyTestFixture : PostgreSqlTestHostFixture&lt;Program&gt;
-/// {
-///     public MyTestFixture() : base(builder => builder
-///         .WithTablesIgnoredOnReset("Roles", "Permissions"))
-///     {
-///     }
-/// }
-/// </code>
-/// </example>
-public class PostgreSqlTestHostFixture<TProgram> : TestHostFixture<TProgram> where TProgram : class
-{
-    /// <summary>
-    /// Initializes a new instance with PostgreSQL test container.
-    /// </summary>
-    /// <param name="configure">Optional additional configuration for the test context builder.</param>
-    public PostgreSqlTestHostFixture(
-        Func<TestContextBuilder<TProgram>, TestContextBuilder<TProgram>>? configure = null)
-        : base(builder =>
-        {
-            builder = builder.WithPostgreSql();
-            return configure?.Invoke(builder) ?? builder;
-        })
+    public async Task DisposeAsync()
     {
+        if (Context != null)
+        {
+            await Context.DisposeAsync();
+        }
+
+        await Container.StopAsync();
     }
 }

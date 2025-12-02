@@ -13,6 +13,7 @@ namespace Shared.Infrastructure.Tests.Core;
 /// <summary>
 /// Default implementation of test host using WebApplicationFactory.
 /// Manages the test application lifecycle, configuration overrides, and database management.
+/// Container lifecycle is managed externally by the fixture or test.
 /// </summary>
 /// <typeparam name="TProgram">The Program or Startup class of the application under test.</typeparam>
 internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost where TProgram : class
@@ -78,7 +79,7 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
 
         builder.ConfigureServices((context, services) =>
         {
-            // Replace all NpgsqlDataSource instances with test versions if container is configured
+            // Replace all NpgsqlDataSource instances with test container's connection
             if (_container != null)
             {
                 services.ReplaceNpgsqlDataSources(_container.GetConnectionString());
@@ -101,17 +102,13 @@ internal class TestHost<TProgram> : WebApplicationFactory<TProgram>, ITestHost w
 
     /// <summary>
     /// Disposes the test host and associated resources.
+    /// Container is NOT stopped here - it's managed by the fixture or test.
     /// </summary>
     public new async ValueTask DisposeAsync()
     {
         if (_resetStrategy != null)
         {
             await _resetStrategy.DisposeAsync();
-        }
-
-        if (_container != null)
-        {
-            await _container.StopAsync();
         }
 
         await base.DisposeAsync();

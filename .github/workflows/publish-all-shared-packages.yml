@@ -12,6 +12,7 @@ on:
       - "tests/Modules/Shared*/**"
       - "Directory.Packages.props"
       - ".github/workflows/publish-all-shared-packages.yml"
+  workflow_dispatch:
 
 jobs:
   build-test-and-publish:
@@ -67,6 +68,7 @@ jobs:
           VERSION=1.0.0-build.${{ github.run_number }}
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Abstractions
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Infrastructure
+          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Infrastructure.Generators
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Tools/Shared.EnvFileGenerator
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Domain
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Application
@@ -88,6 +90,14 @@ jobs:
         uses: actions/delete-package-versions@v4
         with:
           package-name: "Shared.Infrastructure"
+          package-type: "nuget"
+          min-versions-to-keep: 1
+          delete-only-pre-release-versions: "true"
+
+      - name: Delete old Shared.Infrastructure.Generators packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: "Shared.Infrastructure.Generators"
           package-type: "nuget"
           min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"

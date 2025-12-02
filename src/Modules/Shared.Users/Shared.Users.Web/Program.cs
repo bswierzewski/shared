@@ -1,11 +1,10 @@
 using Shared.Abstractions.Modules;
-using Shared.Infrastructure.Modules;
 using Shared.Users.Infrastructure.Extensions.Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load and register all modules
-var modules = ModuleLoader.LoadModules();
+// Load modules from auto-generated registry
+var modules = ModuleRegistry.GetModules();
 
 builder.Services.AddSingleton<IReadOnlyCollection<IModule>>(modules.AsReadOnly());
 
@@ -30,5 +29,7 @@ await app.RunAsync();
 
 /// <summary>
 /// Main program class used for integration testing.
+/// [GenerateModuleRegistry] triggers source generator to create ModuleRegistry class.
 /// </summary>
+[GenerateModuleRegistry]
 public partial class Program { }

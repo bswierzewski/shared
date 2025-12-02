@@ -137,8 +137,8 @@ Choose your identity provider (Clerk or Supabase):
 Register the module in your application's `Program.cs`:
 
 ```csharp
-// Load modules
-var modules = ModuleLoader.LoadModules();
+// Load modules from auto-generated registry
+var modules = ModuleRegistry.GetModules();
 
 // Register all modules
 builder.Services.RegisterModules(modules, builder.Configuration);
@@ -154,6 +154,10 @@ app.UseModules(modules, builder.Configuration);
 await app.Services.InitializeModules(modules);
 
 app.Run();
+
+// [GenerateModuleRegistry] triggers source generator
+[GenerateModuleRegistry]
+public partial class Program { }
 ```
 
 The `Initialize()` method:
@@ -330,8 +334,8 @@ During module initialization, `RolePermissionSynchronizationService` automatical
 The module includes test support via `TestHostProgram`:
 
 ```csharp
-// Load and initialize modules for testing
-var modules = ModuleLoader.LoadModules();
+// Load modules from auto-generated registry
+var modules = ModuleRegistry.GetModules();
 builder.Services.RegisterModules(modules, builder.Configuration);
 
 // Add test JWT authentication
@@ -341,6 +345,10 @@ builder.Services.AddAuthentication()
 var app = builder.Build();
 app.UseModules(modules, builder.Configuration);
 await app.Services.InitializeModules(modules);
+
+// [GenerateModuleRegistry] triggers source generator
+[GenerateModuleRegistry]
+public partial class Program { }
 ```
 
 Use test JWT bearer tokens to test protected endpoints without external authentication providers.
