@@ -17,8 +17,8 @@ public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Get token using shared context's provider (has built-in cache)
-        var token = await _context.GetTokenAsync(_fixture.TestUser.Email, _fixture.TestUser.Password);
+        // Get token using fixture's provider (has built-in cache)
+        var token = await _fixture.TokenProvider.GetTokenAsync(_fixture.TestUser.Email, _fixture.TestUser.Password);
         _context.Client.WithBearerToken(token);
     }
 

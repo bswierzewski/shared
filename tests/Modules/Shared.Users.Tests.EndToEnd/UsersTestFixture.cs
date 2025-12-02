@@ -38,6 +38,12 @@ public class UsersTestFixture : IAsyncLifetime
     /// </summary>
     public TestUserOptions TestUser { get; private set; } = null!;
 
+    /// <summary>
+    /// Gets the token provider for authentication.
+    /// Shared across all tests - has built-in caching.
+    /// </summary>
+    public ITokenProvider TokenProvider { get; private set; } = null!;
+
     public async Task InitializeAsync()
     {
         // Start PostgreSQL container (once for all tests)
@@ -56,8 +62,9 @@ public class UsersTestFixture : IAsyncLifetime
             })
             .BuildAsync();
 
-        // Get test user configuration
+        // Get test user configuration and token provider
         TestUser = Context.GetRequiredService<IOptions<TestUserOptions>>().Value;
+        TokenProvider = Context.GetRequiredService<ITokenProvider>();
     }
 
     public async Task DisposeAsync()

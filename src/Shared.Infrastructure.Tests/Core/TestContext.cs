@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Shared.Infrastructure.Tests.Authentication;
 using Shared.Infrastructure.Tests.Builders;
 
 namespace Shared.Infrastructure.Tests.Core;
@@ -16,7 +15,6 @@ public sealed class TestContext : IAsyncDisposable
 {
     private readonly ITestHost _host;
     private HttpClient? _client;
-    private ITokenProvider? _tokenProvider;
 
     internal TestContext(ITestHost host)
     {
@@ -33,14 +31,6 @@ public sealed class TestContext : IAsyncDisposable
     /// Gets the service provider for resolving services from the test application.
     /// </summary>
     public IServiceProvider Services => _host.Services;
-
-    /// <summary>
-    /// Gets the token provider for acquiring authentication tokens.
-    /// The provider is resolved lazily from the service provider on first access.
-    /// Provider type (Clerk, Supabase, Test) depends on DI configuration.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if ITokenProvider is not registered in services.</exception>
-    public ITokenProvider TokenProvider => _tokenProvider ??= Services.GetRequiredService<ITokenProvider>();
 
     /// <summary>
     /// Resets the database to a clean state.
