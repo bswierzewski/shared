@@ -48,7 +48,7 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build
+      - name: Build all projects
         run: dotnet build --no-restore --configuration Release
 
       - name: Create .env file for tests

@@ -1,3 +1,4 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -46,6 +47,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{44444444-5555-6666-7777-888888888888}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Users.Tests.EndToEnd", "tests\Modules\Shared.Users.Tests.EndToEnd\Shared.Users.Tests.EndToEnd.csproj", "{A3B4C5D6-E7F8-49A0-F1A2-B3C4D5E6F7A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Infrastructure.Generators", "src\Shared.Infrastructure.Generators\Shared.Infrastructure.Generators.csproj", "{EAC526B8-40CE-462C-BC1C-F0935BE60147}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -165,6 +168,18 @@ Global
 		{A3B4C5D6-E7F8-49A0-F1A2-B3C4D5E6F7A8}.Release|x64.Build.0 = Release|Any CPU
 		{A3B4C5D6-E7F8-49A0-F1A2-B3C4D5E6F7A8}.Release|x86.ActiveCfg = Release|Any CPU
 		{A3B4C5D6-E7F8-49A0-F1A2-B3C4D5E6F7A8}.Release|x86.Build.0 = Release|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Debug|x64.Build.0 = Debug|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Debug|x86.Build.0 = Debug|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Release|x64.ActiveCfg = Release|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Release|x64.Build.0 = Release|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Release|x86.ActiveCfg = Release|Any CPU
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -184,6 +199,7 @@ Global
 		{D8E9F0A1-B2C3-44D5-E6F7-B8C9D0E1F2A3} = {11111111-2222-3333-4444-555555555555}
 		{44444444-5555-6666-7777-888888888888} = {33333333-4444-5555-6666-777777777777}
 		{A3B4C5D6-E7F8-49A0-F1A2-B3C4D5E6F7A8} = {44444444-5555-6666-7777-888888888888}
+		{EAC526B8-40CE-462C-BC1C-F0935BE60147} = {11111111-2222-3333-4444-555555555555}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1C2D3E4-F5A6-47A8-B9C0-D1E2F3A4B5C6}
