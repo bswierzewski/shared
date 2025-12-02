@@ -15,6 +15,7 @@ public class ModuleRegistryGenerator : IIncrementalGenerator
     private const string IModuleFullName = "Shared.Abstractions.Modules.IModule";
     private const string GenerateModuleRegistryAttribute = "Shared.Abstractions.Modules.GenerateModuleRegistryAttribute";
 
+    /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         // Register attribute for syntax highlighting
