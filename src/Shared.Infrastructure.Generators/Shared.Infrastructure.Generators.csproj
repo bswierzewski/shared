@@ -16,9 +16,12 @@
     <Authors>Bartosz Swierzewski</Authors>
     <Description>Source generator for automatic IModule discovery in modular monolith architecture.</Description>
     
-    <!-- Important: Include as analyzer in NuGet package -->
+    <!-- Source Generator configuration -->
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <PackageTags>analyzer;roslyn;generator;module;discovery</PackageTags>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>
 
   <ItemGroup>
