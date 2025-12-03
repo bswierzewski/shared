@@ -169,8 +169,11 @@ public sealed class TestContextBuilder<TProgram> where TProgram : class
         // Initialize modules (migrations, permissions sync, etc.)
         if (_autoInitializeModules)
         {
-            var modules = host.Services.GetRequiredService<IEnumerable<IModule>>();
-            await host.Services.InitializeModules(modules);
+            var modules = host.Services.GetServices<IModule>();
+            foreach (var module in modules)
+            {
+                await module.Initialize(host.Services, CancellationToken.None);
+            }
         }
 
         // Initialize database reset strategy (Respawn)
