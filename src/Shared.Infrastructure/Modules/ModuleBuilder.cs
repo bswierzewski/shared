@@ -118,3 +118,21 @@ public class ModuleBuilder(IServiceCollection services, IConfiguration configura
     /// <returns>The service collection with all registered module services.</returns>
     public IServiceCollection Build() => Services;
 }
+
+/// <summary>
+/// Extension methods for creating ModuleBuilder instances.
+/// </summary>
+public static class ModuleBuilderExtensions
+{
+    /// <summary>
+    /// Creates a ModuleBuilder for fluent configuration of module services and dependencies.
+    /// </summary>
+    /// <param name="services">The service collection to register module services into.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <param name="moduleName">The name of the module being configured.</param>
+    /// <returns>A ModuleBuilder instance for fluent API configuration.</returns>
+    public static ModuleBuilder AddModule(this IServiceCollection services, IConfiguration configuration, string moduleName)
+    {
+        return new ModuleBuilder(services, configuration, moduleName);
+    }
+}

@@ -1,15 +1,10 @@
 using Shared.Abstractions.Modules;
-using Shared.Infrastructure.Modules;
 using Shared.Users.Infrastructure.Extensions.Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load modules from auto-generated registry
-var modules = ModuleRegistry.GetModules();
-
-builder.Services.AddSingleton<IReadOnlyCollection<IModule>>(modules.AsReadOnly());
-
-builder.Services.RegisterModules(modules, builder.Configuration);
+// Register modules from auto-generated registry
+builder.Services.RegisterModules(builder.Configuration);
 
 builder.Services.AddAuthentication()
     .AddSupabaseJwtBearer();
@@ -21,10 +16,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Use all modules (automatic middleware & endpoint configuration)
-app.UseModules(modules, builder.Configuration);
+app.UseModules(builder.Configuration);
 
 // Initialize all modules (migrations, seeding, etc.)
-await app.Services.InitializeModules(modules);
+await app.Services.InitModules();
 
 await app.RunAsync();
 

@@ -14,7 +14,7 @@ namespace Shared.Users.Infrastructure.Services;
 public class RolePermissionSynchronizationService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IReadOnlyCollection<IModule> _modules;
+    private readonly IEnumerable<IModule> _modules;
     private readonly ILogger<RolePermissionSynchronizationService> _logger;
 
     /// <summary>
@@ -24,7 +24,7 @@ public class RolePermissionSynchronizationService
     public RolePermissionSynchronizationService(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        _modules = serviceProvider.GetRequiredService<IReadOnlyCollection<IModule>>();
+        _modules = serviceProvider.GetServices<IModule>();
         _logger = serviceProvider.GetRequiredService<ILogger<RolePermissionSynchronizationService>>();
     }
 
