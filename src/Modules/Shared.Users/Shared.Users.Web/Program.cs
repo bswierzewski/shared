@@ -1,7 +1,12 @@
 using Shared.Abstractions.Modules;
+using Shared.Infrastructure.Exceptions;
 using Shared.Users.Infrastructure.Extensions.Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Exception handling
+builder.Services.AddExceptionHandler<CustomExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Register modules from auto-generated registry
 builder.Services.RegisterModules(builder.Configuration);
@@ -11,6 +16,9 @@ builder.Services.AddAuthentication()
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// Exception handling
+app.UseExceptionHandler(options => { });
 
 app.UseAuthentication();
 app.UseAuthorization();

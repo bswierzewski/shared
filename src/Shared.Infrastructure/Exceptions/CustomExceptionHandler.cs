@@ -1,21 +1,33 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Shared.Infrastructure.Exceptions;
 
 /// <summary>
-/// Global exception handler that converts known exceptions into appropriate HTTP responses.
+/// Global exception handler that converts all exceptions into appropriate HTTP responses.
+/// Implements best practices for security and observability.
 /// </summary>
 public class CustomExceptionHandler : IExceptionHandler
 {
     private readonly Dictionary<Type, Func<HttpContext, Exception, Task>> _exceptionHandlers;
+    private readonly ILogger<CustomExceptionHandler> _logger;
+    private readonly IHostEnvironment _environment;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CustomExceptionHandler"/> class.
     /// </summary>
-    public CustomExceptionHandler()
+    /// <param name="logger">The logger instance for logging unhandled exceptions.</param>
+    /// <param name="environment">The host environment to determine if running in development.</param>
+    public CustomExceptionHandler(
+        ILogger<CustomExceptionHandler> logger,
+        IHostEnvironment environment)
     {
+        _logger = logger;
+        _environment = environment;
+
         // Register known exception types and handlers.
         _exceptionHandlers = new()
         {
@@ -32,18 +44,21 @@ public class CustomExceptionHandler : IExceptionHandler
     /// <param name="httpContext">The HTTP context.</param>
     /// <param name="exception">The exception to handle.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>True if the exception was handled; otherwise, false.</returns>
+    /// <returns>Always returns true as all exceptions are handled.</returns>
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var exceptionType = exception.GetType();
 
-        if (_exceptionHandlers.ContainsKey(exceptionType))
+        // Handle known exceptions
+        if (_exceptionHandlers.TryGetValue(exceptionType, out var handler))
         {
-            await _exceptionHandlers[exceptionType].Invoke(httpContext, exception);
+            await handler.Invoke(httpContext, exception);
             return true;
         }
 
-        return false;
+        // Handle all other (unexpected) exceptions
+        await HandleUnknownException(httpContext, exception, cancellationToken);
+        return true;
     }
 
     private async Task HandleValidationException(HttpContext httpContext, Exception ex)
@@ -55,7 +70,12 @@ public class CustomExceptionHandler : IExceptionHandler
         await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(exception.Errors)
         {
             Status = StatusCodes.Status400BadRequest,
-            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+            Instance = httpContext.Request.Path,
+            Extensions = new Dictionary<string, object?>
+            {
+                ["traceId"] = httpContext.TraceIdentifier
+            }
         });
     }
 
@@ -65,12 +85,17 @@ public class CustomExceptionHandler : IExceptionHandler
 
         httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails()
+        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
         {
             Status = StatusCodes.Status404NotFound,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
             Title = "The specified resource was not found.",
-            Detail = exception.Message
+            Detail = exception.Message, // Safe - you control this message
+            Instance = httpContext.Request.Path,
+            Extensions = new Dictionary<string, object?>
+            {
+                ["traceId"] = httpContext.TraceIdentifier
+            }
         });
     }
 
@@ -82,7 +107,12 @@ public class CustomExceptionHandler : IExceptionHandler
         {
             Status = StatusCodes.Status401Unauthorized,
             Title = "Unauthorized",
-            Type = "https://tools.ietf.org/html/rfc7235#section-3.1"
+            Type = "https://tools.ietf.org/html/rfc7235#section-3.1",
+            Instance = httpContext.Request.Path,
+            Extensions = new Dictionary<string, object?>
+            {
+                ["traceId"] = httpContext.TraceIdentifier
+            }
         });
     }
 
@@ -94,7 +124,49 @@ public class CustomExceptionHandler : IExceptionHandler
         {
             Status = StatusCodes.Status403Forbidden,
             Title = "Forbidden",
-            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3"
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+            Instance = httpContext.Request.Path,
+            Extensions = new Dictionary<string, object?>
+            {
+                ["traceId"] = httpContext.TraceIdentifier
+            }
         });
+    }
+
+    private async Task HandleUnknownException(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        // Log the unexpected exception with full details
+        _logger.LogError(
+            exception,
+            "An unhandled exception occurred while processing request {Method} {Path}",
+            httpContext.Request.Method,
+            httpContext.Request.Path);
+
+        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+        // In Production: NEVER expose exception details
+        // In Development: Show details for debugging
+        var problemDetails = new ProblemDetails
+        {
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An error occurred while processing your request.",
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
+            Instance = httpContext.Request.Path,
+            Extensions = new Dictionary<string, object?>
+            {
+                ["traceId"] = httpContext.TraceIdentifier
+            }
+        };
+
+        // Only include exception details in Development
+        if (_environment.IsDevelopment())
+        {
+            problemDetails.Detail = exception.ToString();
+        }
+
+        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
     }
 }
