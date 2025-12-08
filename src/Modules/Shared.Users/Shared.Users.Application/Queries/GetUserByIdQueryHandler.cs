@@ -10,16 +10,17 @@ namespace Shared.Users.Application.Queries;
 /// </summary>
 internal class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto?>
 {
-    private readonly IUsersReadDbContext _readContext;
+    private readonly IUsersDbContext _context;
 
-    public GetUserByIdQueryHandler(IUsersReadDbContext readContext)
+    public GetUserByIdQueryHandler(IUsersDbContext context)
     {
-        _readContext = readContext;
+        _context = context;
     }
 
     public async Task<UserDto?> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
-        var user = await _readContext.Users
+        var user = await _context.Users
+            .AsNoTracking()
             .Include(u => u.ExternalProviders)
             .Include(u => u.Roles)
             .Include(u => u.Permissions)

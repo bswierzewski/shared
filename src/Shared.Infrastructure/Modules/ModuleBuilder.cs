@@ -46,18 +46,16 @@ public class ModuleBuilder(IServiceCollection services, IConfiguration configura
 
     /// <summary>
     /// Registers PostgreSQL database context and persistence infrastructure.
-    /// Configures Npgsql data source, Entity Framework Core with interceptors, and repository interfaces.
+    /// Configures Npgsql data source, Entity Framework Core with interceptors, and repository interface.
     /// </summary>
     /// <typeparam name="TDbContext">The Entity Framework DbContext type to register.</typeparam>
-    /// <typeparam name="TReadInterface">The read-only repository interface to register.</typeparam>
-    /// <typeparam name="TWriteInterface">The write repository interface to register.</typeparam>
+    /// <typeparam name="TInterface">The database context interface to register.</typeparam>
     /// <param name="connectionStringFactory">A factory function that produces the PostgreSQL connection string.</param>
     /// <returns>The current module builder instance for method chaining.</returns>
-    public ModuleBuilder AddPostgres<TDbContext, TReadInterface, TWriteInterface>(
+    public ModuleBuilder AddPostgres<TDbContext, TInterface>(
         Func<IServiceProvider, string> connectionStringFactory)
-        where TDbContext : DbContext, TReadInterface, TWriteInterface
-        where TReadInterface : class
-        where TWriteInterface : class
+        where TDbContext : DbContext, TInterface
+        where TInterface : class
     {
         Services.AddKeyedSingleton(ModuleName, (sp, key) =>
         {
@@ -80,8 +78,7 @@ public class ModuleBuilder(IServiceCollection services, IConfiguration configura
                    .AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
         });
 
-        Services.AddScoped<TReadInterface>(sp => sp.GetRequiredService<TDbContext>());
-        Services.AddScoped<TWriteInterface>(sp => sp.GetRequiredService<TDbContext>());
+        Services.AddScoped<TInterface>(sp => sp.GetRequiredService<TDbContext>());
 
         return this;
     }

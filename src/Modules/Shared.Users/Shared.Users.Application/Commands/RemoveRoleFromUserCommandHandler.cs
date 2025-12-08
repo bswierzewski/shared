@@ -9,17 +9,17 @@ namespace Shared.Users.Application.Commands;
 /// </summary>
 internal class RemoveRoleFromUserCommandHandler : IRequestHandler<RemoveRoleFromUserCommand>
 {
-    private readonly IUsersWriteDbContext _writeContext;
+    private readonly IUsersDbContext _context;
 
-    public RemoveRoleFromUserCommandHandler(IUsersWriteDbContext writeContext)
+    public RemoveRoleFromUserCommandHandler(IUsersDbContext context)
     {
-        _writeContext = writeContext;
+        _context = context;
     }
 
     public async Task Handle(RemoveRoleFromUserCommand request, CancellationToken cancellationToken)
     {
         // Load user with roles navigation property
-        var user = await _writeContext.Users
+        var user = await _context.Users
             .Include(u => u.Roles)
             .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
@@ -27,7 +27,7 @@ internal class RemoveRoleFromUserCommandHandler : IRequestHandler<RemoveRoleFrom
             throw new InvalidOperationException($"User {request.UserId} not found");
 
         // Find the role by name
-        var role = await _writeContext.Roles
+        var role = await _context.Roles
             .FirstOrDefaultAsync(r => r.Name == request.RoleName, cancellationToken);
 
         // If role doesn't exist, operation is idempotent (no-op)
@@ -36,6 +36,6 @@ internal class RemoveRoleFromUserCommandHandler : IRequestHandler<RemoveRoleFrom
 
         // Remove role from user
         user.RemoveRole(role);
-        await _writeContext.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

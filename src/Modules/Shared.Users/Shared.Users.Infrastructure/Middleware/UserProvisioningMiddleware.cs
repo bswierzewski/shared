@@ -9,7 +9,7 @@ using Shared.Users.Infrastructure.Consts;
 namespace Shared.Users.Infrastructure.Middleware;
 
 /// <summary>
-/// JIT Provisioning Middleware - orchestrates user provisioning and claims enrichment.
+/// User Provisioning Middleware - orchestrates user provisioning and claims enrichment.
 ///
 /// Flow:
 /// 1. Extract JWT claims (email, sub, displayName, provider)
@@ -19,17 +19,17 @@ namespace Shared.Users.Infrastructure.Middleware;
 /// 4. Load user's assigned roles and permissions from database
 /// 5. Add role and permission claims to ClaimsPrincipal for authorization
 /// </summary>
-public class JITProvisioningMiddleware
+public class UserProvisioningMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly ILogger<JITProvisioningMiddleware> _logger;
+    private readonly ILogger<UserProvisioningMiddleware> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the JitProvisioningMiddleware
+    /// Initializes a new instance of the UserProvisioningMiddleware
     /// </summary>
-    public JITProvisioningMiddleware(
+    public UserProvisioningMiddleware(
         RequestDelegate next,
-        ILogger<JITProvisioningMiddleware> logger)
+        ILogger<UserProvisioningMiddleware> logger)
     {
         _next = next;
         _logger = logger;
@@ -41,7 +41,7 @@ public class JITProvisioningMiddleware
     public async Task InvokeAsync(
         HttpContext context,
         IUserProvisioningService provisioningService,
-        IUsersReadDbContext readContext)
+        IUsersDbContext dbContext)
     {
         var claimsPrincipal = context.User;
 
@@ -105,7 +105,8 @@ public class JITProvisioningMiddleware
             }
 
             // 4. LOAD ROLES/PERMISSIONS FROM DATABASE
-            var userFull = await readContext.Users
+            var userFull = await dbContext.Users
+                .AsNoTracking()
                 .Where(u => u.Id == user.Id)
                 .Include(u => u.Roles)
                     .ThenInclude(r => r.Permissions)
@@ -156,7 +157,7 @@ public class JITProvisioningMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in JIT provisioning middleware");
+            _logger.LogError(ex, "Error in user provisioning middleware");
             // Fail-open: continue request without provisioning
         }
 

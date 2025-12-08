@@ -9,17 +9,17 @@ namespace Shared.Users.Application.Commands;
 /// </summary>
 internal class GrantPermissionToUserCommandHandler : IRequestHandler<GrantPermissionToUserCommand>
 {
-    private readonly IUsersWriteDbContext _writeContext;
+    private readonly IUsersDbContext _context;
 
-    public GrantPermissionToUserCommandHandler(IUsersWriteDbContext writeContext)
+    public GrantPermissionToUserCommandHandler(IUsersDbContext context)
     {
-        _writeContext = writeContext;
+        _context = context;
     }
 
     public async Task Handle(GrantPermissionToUserCommand request, CancellationToken cancellationToken)
     {
         // Load user with permissions navigation property
-        var user = await _writeContext.Users
+        var user = await _context.Users
             .Include(u => u.Permissions)
             .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
@@ -27,7 +27,7 @@ internal class GrantPermissionToUserCommandHandler : IRequestHandler<GrantPermis
             throw new InvalidOperationException($"User {request.UserId} not found");
 
         // Find the permission by name
-        var permission = await _writeContext.Permissions
+        var permission = await _context.Permissions
             .FirstOrDefaultAsync(p => p.Name == request.PermissionName, cancellationToken);
 
         if (permission == null)
@@ -35,6 +35,6 @@ internal class GrantPermissionToUserCommandHandler : IRequestHandler<GrantPermis
 
         // Grant permission to user
         user.GrantPermission(permission);
-        await _writeContext.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }
