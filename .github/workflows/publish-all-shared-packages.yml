@@ -67,7 +67,7 @@ jobs:
         run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Exceptions.Tests.EndToEnd
 
       - name: Run Shared.EnvFileGenerator Tests
-        run: dotnet test --no-build --configuration Release --verbosity normal tests/Tools/Shared.EnvFileGenerator.Tests.Unit
+        run: dotnet test --configuration Release --verbosity normal tests/Tools/Shared.EnvFileGenerator.Tests.Unit
 
       - name: Pack all packages
         run: |
