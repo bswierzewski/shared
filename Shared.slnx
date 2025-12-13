@@ -40,4 +40,7 @@
     <Project Path="tests/Modules/Shared.Exceptions.Tests.EndToEnd/Shared.Exceptions.Tests.EndToEnd.csproj" />
     <Project Path="tests/Modules/Shared.Users.Tests.EndToEnd/Shared.Users.Tests.EndToEnd.csproj" />
   </Folder>
+    <Folder Name="/tests/Tools/">
+    <Project Path="tests/Tools/Shared.EnvFileGenerator.Tests.Unit/Shared.EnvFileGenerator.Tests.Unit.csproj" />
+  </Folder>
 </Solution>
