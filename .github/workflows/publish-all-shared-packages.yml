@@ -46,10 +46,10 @@ jobs:
           dotnet-version: "9.0.x"
 
       - name: Restore dependencies
-        run: dotnet restore Shared.slnx
+        run: dotnet restore
 
       - name: Build all projects
-        run: dotnet build Shared.slnx --no-restore --configuration Release
+        run: dotnet build --no-restore --configuration Release
 
       - name: Create .env file for tests
         working-directory: ./tests/Modules/Shared.Users.Tests.EndToEnd
@@ -58,16 +58,16 @@ jobs:
           echo "${{ secrets.ENV_FILE }}" >> .env
 
       - name: Run Shared.Users Tests
-        run: dotnet test Shared.slnx --no-build --configuration Release --verbosity normal tests/Modules/Shared.Users.Tests.EndToEnd
+        run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Users.Tests.EndToEnd
 
       - name: Remove .env file
         run: rm -f ./tests/Modules/Shared.Users.Tests.EndToEnd/.env
 
       - name: Run Shared.Exceptions Tests
-        run: dotnet test Shared.slnx --no-build --configuration Release --verbosity normal tests/Modules/Shared.Exceptions.Tests.EndToEnd
+        run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Exceptions.Tests.EndToEnd
 
       - name: Run Shared.EnvFileGenerator Tests
-        run: dotnet test Shared.slnx --configuration Release --verbosity normal tests/Tools/Shared.EnvFileGenerator.Tests.Unit
+        run: dotnet test --configuration Release --verbosity normal tests/Tools/Shared.EnvFileGenerator.Tests.Unit
 
       - name: Pack all packages
         run: |
