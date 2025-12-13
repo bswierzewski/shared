@@ -11,11 +11,11 @@ namespace Shared.Users.Infrastructure.Services;
 /// </summary>
 internal class UserProvisioningService : IUserProvisioningService
 {
-    private readonly IUsersWriteDbContext _writeContext;
+    private readonly IUsersDbContext _context;
 
-    public UserProvisioningService(IUsersWriteDbContext writeContext)
+    public UserProvisioningService(IUsersDbContext context)
     {
-        _writeContext = writeContext;
+        _context = context;
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ internal class UserProvisioningService : IUserProvisioningService
         CancellationToken cancellationToken = default)
     {
         // 1. Try to find by external provider ID
-        var user = await _writeContext.Users
+        var user = await _context.Users
             .Include(u => u.ExternalProviders)
             .FirstOrDefaultAsync(u => u.ExternalProviders
                 .Any(ep => ep.Provider == provider && ep.ExternalUserId == externalUserId),
@@ -45,7 +45,7 @@ internal class UserProvisioningService : IUserProvisioningService
         // 2. Try to find by email if not found by provider
         if (user == null && !string.IsNullOrEmpty(email))
         {
-            user = await _writeContext.Users
+            user = await _context.Users
                 .Include(u => u.ExternalProviders)
                 .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
@@ -56,7 +56,7 @@ internal class UserProvisioningService : IUserProvisioningService
                 // Explicitly add new provider to DbContext so it gets saved
                 if (newProvider != null)
                 {
-                    _writeContext.ExternalProviders.Add(newProvider);
+                    _context.ExternalProviders.Add(newProvider);
                 }
             }
         }
@@ -68,7 +68,7 @@ internal class UserProvisioningService : IUserProvisioningService
                 throw new InvalidOperationException("Email is required for new user provisioning");
 
             user = User.ProvisionNew(email, provider, externalUserId);
-            _writeContext.Users.Add(user);
+            _context.Users.Add(user);
         }
         else
         {
@@ -76,7 +76,7 @@ internal class UserProvisioningService : IUserProvisioningService
             user.UpdateLastLogin();
         }
 
-        await _writeContext.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
         return user;
     }
 }

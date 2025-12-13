@@ -6,8 +6,9 @@ using Shared.Users.Domain.Entities;
 namespace Shared.Users.Infrastructure.Persistence;
 
 /// <summary>
-/// EF Core DbContext for Users module.
-/// Implements both IUsersReadDbContext (no-tracking) and IUsersWriteDbContext (change-tracking).
+/// EF Core DbContext for the Users module.
+/// Implements <see cref="IUsersDbContext"/> for both read and write operations.
+/// For read operations, use AsNoTracking() on queries for better performance.
 ///
 /// Write operations (SaveChangesAsync) automatically audit changes:
 /// - CreatedBy: Set from IUser (current user context)
@@ -15,11 +16,7 @@ namespace Shared.Users.Infrastructure.Persistence;
 /// - ModifiedBy: Set from IUser
 /// - ModifiedAt: Set to UtcNow
 /// </summary>
-/// <summary>
-/// EF Core DbContext for the Users module.
-/// Implements both <see cref="IUsersReadDbContext"/> (no-tracking queries) and <see cref="IUsersWriteDbContext"/> (change-tracked operations).
-/// </summary>
-public class UsersDbContext : DbContext, IUsersReadDbContext, IUsersWriteDbContext
+public class UsersDbContext : DbContext, IUsersDbContext
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UsersDbContext"/> class.
@@ -29,11 +26,6 @@ public class UsersDbContext : DbContext, IUsersReadDbContext, IUsersWriteDbConte
         : base(options)
     {
     }
-
-    // Read operations (no-tracking for performance)
-    IQueryable<User> IUsersReadDbContext.Users => Users.AsNoTracking();
-    IQueryable<Role> IUsersReadDbContext.Roles => Roles.AsNoTracking();
-    IQueryable<Permission> IUsersReadDbContext.Permissions => Permissions.AsNoTracking();
 
     /// <summary>
     /// Gets or sets the collection of users.
@@ -54,14 +46,6 @@ public class UsersDbContext : DbContext, IUsersReadDbContext, IUsersWriteDbConte
     /// Gets or sets the collection of external provider mappings.
     /// </summary>
     public DbSet<ExternalProvider> ExternalProviders { get; set; } = null!;
-
-    /// <summary>
-    /// Saves all pending changes to the database asynchronously.
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>The number of state entries written to the database.</returns>
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        => await base.SaveChangesAsync(cancellationToken);
 
     /// <summary>
     /// Configures the model during context initialization.

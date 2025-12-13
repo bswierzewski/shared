@@ -46,7 +46,7 @@ Shared.Users/
 - Supabase integration with HS256 symmetric key validation
 - Custom claim mapping for each provider (email, displayName, pictureUrl)
 
-**Middleware (Middleware/JITProvisioningMiddleware.cs)**
+**Middleware (Middleware/UserProvisioningMiddleware.cs)**
 - Validates incoming JWT token from configured authentication provider
 - Extracts claims (email, subject, displayName, provider)
 - Upserts user in database (JIT provisioning)
@@ -277,7 +277,7 @@ public async Task<IActionResult> DeleteUser(Guid userId)
 
 1. **Authentication** - Client sends JWT token from Clerk/Supabase/custom provider
 2. **JWT Validation** - `ClerkJwtBearerExtensions` or `SupabaseJwtBearerExtensions` validates the token
-3. **Claims Extraction** - `JITProvisioningMiddleware` extracts claims: email, subject (sub), displayName, provider
+3. **Claims Extraction** - `UserProvisioningMiddleware` extracts claims: email, subject (sub), displayName, provider
 4. **User Upsert** - `UserProvisioningService.UpsertUserAsync()` is called:
    - Search for user by ExternalProvider.ExternalUserId
    - If not found, search by email (to link existing user to new provider)

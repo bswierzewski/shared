@@ -36,13 +36,13 @@ public class RolePermissionSynchronizationService
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         using var scope = _serviceProvider.CreateScope();
-        var writeDbContext = scope.ServiceProvider.GetRequiredService<IUsersWriteDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<IUsersDbContext>();
 
         // Synchronize permissions first (roles depend on them)
-        var databasePermissions = await SyncPermissions(writeDbContext, ct);
+        var databasePermissions = await SyncPermissions(context, ct);
 
         // Synchronize roles with the current permissions
-        await SyncRoles(writeDbContext, databasePermissions, ct);
+        await SyncRoles(context, databasePermissions, ct);
 
         _logger.LogInformation("Permissions and roles synchronized");
     }
@@ -50,10 +50,10 @@ public class RolePermissionSynchronizationService
     /// <summary>
     /// Synchronizes permissions from modules with the database.
     /// </summary>
-    /// <param name="writeDbContext">The write database context.</param>
+    /// <param name="context">The database context.</param>
     /// <param name="ct">Cancellation token for the operation.</param>
     /// <returns>A list of all permissions from the database.</returns>
-    private async Task<List<Permission>> SyncPermissions(IUsersWriteDbContext writeDbContext, CancellationToken ct)
+    private async Task<List<Permission>> SyncPermissions(IUsersDbContext context, CancellationToken ct)
     {
         // Collect module definitions
         var definitions = _modules
@@ -61,7 +61,7 @@ public class RolePermissionSynchronizationService
             .ToList();
 
         // Get database state
-        var databasePermissions = await writeDbContext.Permissions.ToListAsync(ct);
+        var databasePermissions = await context.Permissions.ToListAsync(ct);
         var databasePermissionsMap = databasePermissions.ToDictionary(p => p.Name);
 
         // Upsert permissions
@@ -75,7 +75,7 @@ public class RolePermissionSynchronizationService
             else
             {
                 var newPermission = Permission.Create(definition.Name, definition.Description, isModule: true, moduleName: moduleName);
-                writeDbContext.Permissions.Add(newPermission);
+                context.Permissions.Add(newPermission);
                 databasePermissions.Add(newPermission);
             }
         }
@@ -85,18 +85,18 @@ public class RolePermissionSynchronizationService
         foreach (var permission in databasePermissions.Where(p => p.IsModule && p.IsActive && !definitionNames.Contains(p.Name)))
             permission.Deactivate();
 
-        await writeDbContext.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct);
         return databasePermissions;
     }
 
     /// <summary>
     /// Synchronizes roles from modules with the database.
     /// </summary>
-    /// <param name="writeDbContext">The write database context.</param>
+    /// <param name="context">The database context.</param>
     /// <param name="allDatabasePermissions">List of all permissions currently in the database.</param>
     /// <param name="ct">Cancellation token for the operation.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    private async Task SyncRoles(IUsersWriteDbContext writeDbContext, List<Permission> allDatabasePermissions, CancellationToken ct)
+    private async Task SyncRoles(IUsersDbContext context, List<Permission> allDatabasePermissions, CancellationToken ct)
     {
         // Collect module definitions
         var definitions = _modules
@@ -104,7 +104,7 @@ public class RolePermissionSynchronizationService
             .ToList();
 
         // Include is critical for backing fields
-        var databaseRoles = await writeDbContext.Roles.Include(r => r.Permissions).ToListAsync(ct);
+        var databaseRoles = await context.Roles.Include(r => r.Permissions).ToListAsync(ct);
         var databaseRolesMap = databaseRoles.ToDictionary(r => r.Name);
         var allDatabasePermissionsMap = allDatabasePermissions.ToDictionary(p => p.Name);
 
@@ -114,7 +114,7 @@ public class RolePermissionSynchronizationService
             if (!databaseRolesMap.TryGetValue(definition.Name, out var role))
             {
                 role = Role.Create(definition.Name, definition.Description, isModule: true, moduleName: moduleName);
-                writeDbContext.Roles.Add(role);
+                context.Roles.Add(role);
             }
             else if (!role.IsModule)
             {
@@ -141,6 +141,6 @@ public class RolePermissionSynchronizationService
         foreach (var role in databaseRoles.Where(r => r.IsModule && r.IsActive && !definitionNames.Contains(r.Name)))
             role.Deactivate();
 
-        await writeDbContext.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct);
     }
 }

@@ -62,7 +62,7 @@ public class UsersModule : IModule
                 svc.ConfigureOptions<ClerkOptions>(config);
                 svc.ConfigureOptions<SupabaseOptions>(config);
             })
-            .AddPostgres<UsersDbContext, IUsersReadDbContext, IUsersWriteDbContext>(sp => sp.GetRequiredService<IOptions<UsersDbContextOptions>>().Value.ConnectionString)
+            .AddPostgres<UsersDbContext, IUsersDbContext>(sp => sp.GetRequiredService<IOptions<UsersDbContextOptions>>().Value.ConnectionString)
             .AddCQRS(typeof(ApplicationAssembly).Assembly, typeof(InfrastructureAssembly).Assembly)
             .Build();
 
@@ -75,12 +75,12 @@ public class UsersModule : IModule
 
     /// <summary>
     /// Configures the Users module middleware pipeline.
-    /// Adds JIT provisioning and claims enrichment middleware, and maps endpoints.
+    /// Adds user provisioning and claims enrichment middleware, and maps endpoints.
     /// </summary>
     public void Use(IApplicationBuilder app, IConfiguration configuration)
     {
-        // Add middleware for JIT provisioning and claims enrichment
-        app.UseMiddleware<JITProvisioningMiddleware>();
+        // Add middleware for user provisioning and claims enrichment
+        app.UseMiddleware<UserProvisioningMiddleware>();
 
         // Map user management endpoints
         if (app is Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpointRouteBuilder)

@@ -9,17 +9,17 @@ namespace Shared.Users.Application.Commands;
 /// </summary>
 internal class RevokePermissionFromUserCommandHandler : IRequestHandler<RevokePermissionFromUserCommand>
 {
-    private readonly IUsersWriteDbContext _writeContext;
+    private readonly IUsersDbContext _context;
 
-    public RevokePermissionFromUserCommandHandler(IUsersWriteDbContext writeContext)
+    public RevokePermissionFromUserCommandHandler(IUsersDbContext context)
     {
-        _writeContext = writeContext;
+        _context = context;
     }
 
     public async Task Handle(RevokePermissionFromUserCommand request, CancellationToken cancellationToken)
     {
         // Load user with permissions navigation property
-        var user = await _writeContext.Users
+        var user = await _context.Users
             .Include(u => u.Permissions)
             .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
@@ -27,7 +27,7 @@ internal class RevokePermissionFromUserCommandHandler : IRequestHandler<RevokePe
             throw new InvalidOperationException($"User {request.UserId} not found");
 
         // Find the permission by name
-        var permission = await _writeContext.Permissions
+        var permission = await _context.Permissions
             .FirstOrDefaultAsync(p => p.Name == request.PermissionName, cancellationToken);
 
         // If permission doesn't exist, operation is idempotent (no-op)
@@ -36,6 +36,6 @@ internal class RevokePermissionFromUserCommandHandler : IRequestHandler<RevokePe
 
         // Revoke permission from user
         user.RevokePermission(permission);
-        await _writeContext.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }
