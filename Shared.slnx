@@ -1,0 +1,43 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/publish-all-shared-packages.yml" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="NuGet.Config" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Shared.Abstractions/Shared.Abstractions.csproj" />
+    <Project Path="src/Shared.Infrastructure.Generators/Shared.Infrastructure.Generators.csproj" />
+    <Project Path="src/Shared.Infrastructure.Tests/Shared.Infrastructure.Tests.csproj" />
+    <Project Path="src/Shared.Infrastructure/Shared.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Shared.Exceptions/">
+    <Project Path="src/Modules/Shared.Exceptions/Shared.Exceptions.Application/Shared.Exceptions.Application.csproj" />
+    <Project Path="src/Modules/Shared.Exceptions/Shared.Exceptions.Infrastructure/Shared.Exceptions.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Shared.Users/">
+    <Project Path="src/Modules/Shared.Users/Shared.Users.Application/Shared.Users.Application.csproj" />
+    <Project Path="src/Modules/Shared.Users/Shared.Users.Domain/Shared.Users.Domain.csproj" />
+    <Project Path="src/Modules/Shared.Users/Shared.Users.Infrastructure/Shared.Users.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Tools/">
+    <Project Path="src/Tools/Shared.EnvFileGenerator/Shared.EnvFileGenerator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Shared.Infrastructure.Tests.Unit/Shared.Infrastructure.Tests.Unit.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/">
+    <Project Path="tests/Modules/Shared.Exceptions.Tests.EndToEnd/Shared.Exceptions.Tests.EndToEnd.csproj" />
+    <Project Path="tests/Modules/Shared.Users.Tests.EndToEnd/Shared.Users.Tests.EndToEnd.csproj" />
+  </Folder>
+</Solution>
