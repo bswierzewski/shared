@@ -16,6 +16,9 @@ var builder = WebApplication.CreateBuilder(options);
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+// OpenAPI/Swagger
+builder.Services.AddOpenApi();
+
 // Register modules from auto-generated registry
 builder.Services.RegisterModules(builder.Configuration);
 
@@ -33,6 +36,9 @@ app.UseAuthorization();
 
 // Use all modules (automatic middleware & endpoint configuration)
 app.UseModules(builder.Configuration);
+
+// Map OpenAPI endpoint - available at /openapi/v1.json
+app.MapOpenApi();
 
 // Initialize all modules (migrations, seeding, etc.)
 await app.Services.InitModules();

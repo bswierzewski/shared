@@ -1,13 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- Build Configuration -->
-		<TargetFramework>net9.0</TargetFramework>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
 		<IsTestProject>false</IsTestProject>
-		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
 		<!-- NuGet Package Metadata -->
 		<PackageId>Shared.Infrastructure.Tests</PackageId>
@@ -48,6 +42,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging" />
 		<PackageReference Include="Moq" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" />
 		<PackageReference Include="xunit" />
 
 		<!-- Internal Implementation - not exported to consumers (PrivateAssets="All") -->

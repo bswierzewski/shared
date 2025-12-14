@@ -38,8 +38,7 @@ public static class ExceptionEndpoints
             })
             .WithName("ThrowValidationException")
             .Produces<Microsoft.AspNetCore.Mvc.ProblemDetails>(StatusCodes.Status400BadRequest)
-            .WithSummary("Throws a ValidationException to test validation error responses")
-            .WithOpenApi();
+            .WithSummary("Throws a ValidationException to test validation error responses");
 
         group.MapGet("/not-found", async (ISender sender) =>
             {
@@ -48,8 +47,7 @@ public static class ExceptionEndpoints
             })
             .WithName("ThrowNotFoundException")
             .Produces<Microsoft.AspNetCore.Mvc.ProblemDetails>(StatusCodes.Status404NotFound)
-            .WithSummary("Throws a NotFoundException to test 404 error responses")
-            .WithOpenApi();
+            .WithSummary("Throws a NotFoundException to test 404 error responses");
 
         group.MapGet("/unauthorized", async (ISender sender) =>
             {
@@ -58,8 +56,7 @@ public static class ExceptionEndpoints
             })
             .WithName("ThrowUnauthorizedException")
             .Produces<Microsoft.AspNetCore.Mvc.ProblemDetails>(StatusCodes.Status401Unauthorized)
-            .WithSummary("Throws an UnauthorizedAccessException to test 401 error responses")
-            .WithOpenApi();
+            .WithSummary("Throws an UnauthorizedAccessException to test 401 error responses");
 
         group.MapGet("/forbidden", async (ISender sender) =>
             {
@@ -68,8 +65,7 @@ public static class ExceptionEndpoints
             })
             .WithName("ThrowForbiddenException")
             .Produces<Microsoft.AspNetCore.Mvc.ProblemDetails>(StatusCodes.Status403Forbidden)
-            .WithSummary("Throws a ForbiddenAccessException to test 403 error responses")
-            .WithOpenApi();
+            .WithSummary("Throws a ForbiddenAccessException to test 403 error responses");
 
         group.MapGet("/server-error", async (ISender sender) =>
             {
@@ -78,8 +74,7 @@ public static class ExceptionEndpoints
             })
             .WithName("ThrowServerException")
             .Produces<Microsoft.AspNetCore.Mvc.ProblemDetails>(StatusCodes.Status500InternalServerError)
-            .WithSummary("Throws an unexpected exception to test 500 error responses")
-            .WithOpenApi();
+            .WithSummary("Throws an unexpected exception to test 500 error responses");
 
         return endpoints;
     }
