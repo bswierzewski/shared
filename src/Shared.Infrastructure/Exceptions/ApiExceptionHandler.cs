@@ -10,19 +10,19 @@ namespace Shared.Infrastructure.Exceptions;
 /// Global exception handler that converts all exceptions into appropriate HTTP responses.
 /// Implements best practices for security and observability.
 /// </summary>
-public class CustomExceptionHandler : IExceptionHandler
+public class ApiExceptionHandler : IExceptionHandler
 {
     private readonly Dictionary<Type, Func<HttpContext, Exception, Task>> _exceptionHandlers;
-    private readonly ILogger<CustomExceptionHandler> _logger;
+    private readonly ILogger<ApiExceptionHandler> _logger;
     private readonly IHostEnvironment _environment;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CustomExceptionHandler"/> class.
+    /// Initializes a new instance of the <see cref="ApiExceptionHandler"/> class.
     /// </summary>
     /// <param name="logger">The logger instance for logging unhandled exceptions.</param>
     /// <param name="environment">The host environment to determine if running in development.</param>
-    public CustomExceptionHandler(
-        ILogger<CustomExceptionHandler> logger,
+    public ApiExceptionHandler(
+        ILogger<ApiExceptionHandler> logger,
         IHostEnvironment environment)
     {
         _logger = logger;
@@ -67,15 +67,12 @@ public class CustomExceptionHandler : IExceptionHandler
 
         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
 
-        await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(exception.Errors)
+        await httpContext.Response.WriteAsJsonAsync(new ApiProblemDetails(exception.Errors)
         {
             Status = StatusCodes.Status400BadRequest,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
             Instance = httpContext.Request.Path,
-            Extensions = new Dictionary<string, object?>
-            {
-                ["traceId"] = httpContext.TraceIdentifier
-            }
+            TraceId = httpContext.TraceIdentifier
         });
     }
 
@@ -85,17 +82,14 @@ public class CustomExceptionHandler : IExceptionHandler
 
         httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        await httpContext.Response.WriteAsJsonAsync(new ApiProblemDetails
         {
             Status = StatusCodes.Status404NotFound,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
             Title = "The specified resource was not found.",
             Detail = exception.Message, // Safe - you control this message
             Instance = httpContext.Request.Path,
-            Extensions = new Dictionary<string, object?>
-            {
-                ["traceId"] = httpContext.TraceIdentifier
-            }
+            TraceId = httpContext.TraceIdentifier
         });
     }
 
@@ -103,16 +97,13 @@ public class CustomExceptionHandler : IExceptionHandler
     {
         httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        await httpContext.Response.WriteAsJsonAsync(new ApiProblemDetails
         {
             Status = StatusCodes.Status401Unauthorized,
             Title = "Unauthorized",
             Type = "https://tools.ietf.org/html/rfc7235#section-3.1",
             Instance = httpContext.Request.Path,
-            Extensions = new Dictionary<string, object?>
-            {
-                ["traceId"] = httpContext.TraceIdentifier
-            }
+            TraceId = httpContext.TraceIdentifier
         });
     }
 
@@ -120,16 +111,13 @@ public class CustomExceptionHandler : IExceptionHandler
     {
         httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        await httpContext.Response.WriteAsJsonAsync(new ApiProblemDetails
         {
             Status = StatusCodes.Status403Forbidden,
             Title = "Forbidden",
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
             Instance = httpContext.Request.Path,
-            Extensions = new Dictionary<string, object?>
-            {
-                ["traceId"] = httpContext.TraceIdentifier
-            }
+            TraceId = httpContext.TraceIdentifier
         });
     }
 
@@ -149,16 +137,13 @@ public class CustomExceptionHandler : IExceptionHandler
 
         // In Production: NEVER expose exception details
         // In Development: Show details for debugging
-        var problemDetails = new ProblemDetails
+        var problemDetails = new ApiProblemDetails
         {
             Status = StatusCodes.Status500InternalServerError,
             Title = "An error occurred while processing your request.",
             Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
             Instance = httpContext.Request.Path,
-            Extensions = new Dictionary<string, object?>
-            {
-                ["traceId"] = httpContext.TraceIdentifier
-            }
+            TraceId = httpContext.TraceIdentifier
         };
 
         // Only include exception details in Development

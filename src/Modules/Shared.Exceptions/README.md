@@ -5,7 +5,7 @@ Exception testing module for validating exception handling and ProblemDetails re
 ## Purpose
 
 This module provides test endpoints that intentionally throw various types of exceptions to verify that:
-- `CustomExceptionHandler` correctly transforms exceptions into RFC 7807 ProblemDetails
+- `ApiExceptionHandler` correctly transforms exceptions into RFC 7807 ProblemDetails
 - All exception types return proper HTTP status codes
 - ProblemDetails contain required fields (traceId, errors, etc.)
 - Frontend clients receive consistent error responses
@@ -139,6 +139,6 @@ public async Task ValidationException_ShouldReturn400WithProblemDetails()
 
 ## See Also
 
-- `Shared.Infrastructure.Exceptions.CustomExceptionHandler` - Exception handler implementation
-- `Shared.Infrastructure.Extensions.OpenApiExtensions` - ProblemDetails schema configuration
+- `Shared.Infrastructure.Exceptions.ApiExceptionHandler` - Exception handler implementation
+- `Shared.Infrastructure.OpenApi.OpenApiExtensions` - ProblemDetails schema configuration
 - RFC 7807 - Problem Details for HTTP APIs

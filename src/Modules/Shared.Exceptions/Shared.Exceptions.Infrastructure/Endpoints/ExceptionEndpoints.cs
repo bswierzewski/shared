@@ -12,7 +12,7 @@ namespace Shared.Exceptions.Infrastructure.Endpoints;
 
 /// <summary>
 /// Test endpoints for validating exception handling and ProblemDetails responses.
-/// These endpoints execute commands that throw various exceptions to test the CustomExceptionHandler.
+/// These endpoints execute commands that throw various exceptions to test the ApiExceptionHandler.
 /// </summary>
 public static class ExceptionEndpoints
 {
