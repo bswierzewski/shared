@@ -13,7 +13,7 @@ var options = new WebApplicationOptions
 var builder = WebApplication.CreateBuilder(options);
 
 // Exception handling
-builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // OpenAPI/Swagger

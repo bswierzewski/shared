@@ -17,9 +17,6 @@ namespace Shared.Infrastructure.Behaviors;
 public class LoggingBehavior<TRequest>(ILogger<LoggingBehavior<TRequest>> logger, IUser user) : IRequestPreProcessor<TRequest>
     where TRequest : notnull
 {
-    private readonly ILogger<LoggingBehavior<TRequest>> _logger = logger;
-    private readonly IUser _user = user;
-
     /// <summary>
     /// Processes the request by logging relevant information.
     /// </summary>
@@ -30,8 +27,8 @@ public class LoggingBehavior<TRequest>(ILogger<LoggingBehavior<TRequest>> logger
     {
         var requestName = typeof(TRequest).Name;
 
-        _logger.LogInformation("Request: {Name} {@UserId} {@UserName} {@Request}",
-            requestName, _user.Id, _user.FullName, request);
+        logger.LogInformation("Request: {Name} {@UserId} {@UserName} {@Request}",
+            requestName, user.Id, user.FullName, request);
 
         return Task.CompletedTask;
     }

@@ -1,7 +1,7 @@
+using ErrorOr;
 using MediatR;
-using Shared.Abstractions.Authorization;
-using Shared.Infrastructure.Exceptions;
 using Microsoft.Extensions.Logging;
+using Shared.Abstractions.Authorization;
 using System.Reflection;
 
 namespace Shared.Infrastructure.Behaviors;
@@ -11,7 +11,7 @@ namespace Shared.Infrastructure.Behaviors;
 /// Checks roles, permissions, and claims from JWT tokens to authorize requests.
 /// </summary>
 /// <typeparam name="TRequest">The type of the MediatR request.</typeparam>
-/// <typeparam name="TResponse">The type of the response.</typeparam>
+/// <typeparam name="TResponse">The inner type wrapped by ErrorOr.</typeparam>
 /// <remarks>
 /// <para>
 /// This behavior checks authorization attributes on MediatR request classes:
@@ -22,13 +22,16 @@ namespace Shared.Infrastructure.Behaviors;
 /// </list>
 /// </para>
 /// <para>
-/// If user is not authenticated, throws <see cref="UnauthorizedAccessException"/>.
-/// If user is authenticated but lacks required authorization, throws <see cref="ForbiddenAccessException"/>.
+/// If user is not authenticated, returns an ErrorOr with Unauthorized error.
+/// If user is authenticated but lacks required authorization, returns an ErrorOr with Forbidden error.
 /// </para>
 /// </remarks>
 /// <param name="user">The current user service.</param>
 /// <param name="logger">The logger instance.</param>
-public class AuthorizationBehavior<TRequest, TResponse>(IUser user, ILogger<AuthorizationBehavior<TRequest, TResponse>> logger) : IPipelineBehavior<TRequest, TResponse>
+public sealed class AuthorizationBehavior<TRequest, TResponse>(
+    IUser user,
+    ILogger<AuthorizationBehavior<TRequest, TResponse>> logger)
+    : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
     private readonly IUser _user = user;
@@ -40,16 +43,17 @@ public class AuthorizationBehavior<TRequest, TResponse>(IUser user, ILogger<Auth
     /// <param name="request">The request being processed.</param>
     /// <param name="next">The next behavior in the pipeline.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The response from the next behavior or an authorization failure result.</returns>
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    /// <returns>An ErrorOr result containing either the response or authorization errors.</returns>
+    public async Task<TResponse> Handle(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
         var authorizeAttributes = request.GetType().GetCustomAttributes<AuthorizeAttribute>();
 
         // If no authorization attributes found, continue without authorization checks
         if (!authorizeAttributes.Any())
-        {
-            return await next();
-        }
+            return await next(cancellationToken);
 
         // Check if user is authenticated
         if (!_user.IsAuthenticated)
@@ -58,7 +62,7 @@ public class AuthorizationBehavior<TRequest, TResponse>(IUser user, ILogger<Auth
                 "Unauthorized access attempt to {RequestName} by unauthenticated user",
                 typeof(TRequest).Name);
 
-            throw new UnauthorizedAccessException("Authentication is required to access this resource.");
+            return (dynamic)Error.Unauthorized(code: "Auth.Unauthorized", description: "Authentication is required to access this resource.");
         }
 
         // Check authorization requirements
@@ -80,7 +84,7 @@ public class AuthorizationBehavior<TRequest, TResponse>(IUser user, ILogger<Auth
                         typeof(TRequest).Name,
                         attribute.Roles);
 
-                    throw new ForbiddenAccessException($"User does not have any of the required roles: {attribute.Roles}");
+                    return (dynamic)Error.Forbidden(code: "Auth.Forbidden", description: $"User does not have any of the required roles: {attribute.Roles}");
                 }
             }
 
@@ -100,7 +104,7 @@ public class AuthorizationBehavior<TRequest, TResponse>(IUser user, ILogger<Auth
                             typeof(TRequest).Name,
                             permission);
 
-                        throw new ForbiddenAccessException($"User does not have the required permission: {permission}");
+                        return (dynamic)Error.Forbidden(code: "Auth.Forbidden", description: $"User does not have the required permission: {permission}");
                     }
                 }
             }
@@ -126,14 +130,14 @@ public class AuthorizationBehavior<TRequest, TResponse>(IUser user, ILogger<Auth
                             typeof(TRequest).Name,
                             claim);
 
-                        throw new ForbiddenAccessException($"User does not have the required claim: {claim}");
+                        return (dynamic)Error.Forbidden(code: "Auth.Forbidden", description: $"User does not have the required claim: {claim}");
                     }
                 }
             }
         }
 
         // Authorization passed, continue to next behavior
-        return await next();
+        return await next(cancellationToken);
     }
 }
 

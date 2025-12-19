@@ -97,7 +97,6 @@ public class ModuleBuilder(IServiceCollection services, IConfiguration configura
                 config.RegisterServicesFromAssembly(assembly);
                 
             config.AddOpenRequestPreProcessor(typeof(LoggingBehavior<>));
-            config.AddOpenBehavior(typeof(UnhandledExceptionBehavior<,>));
             config.AddOpenBehavior(typeof(AuthorizationBehavior<,>));
             config.AddOpenBehavior(typeof(ValidationBehavior<,>));
             config.AddOpenBehavior(typeof(PerformanceBehavior<,>));

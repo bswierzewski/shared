@@ -19,9 +19,7 @@ namespace Shared.Infrastructure.Behaviors;
 public class PerformanceBehavior<TRequest, TResponse>(ILogger<PerformanceBehavior<TRequest, TResponse>> logger, IUser user) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly ILogger<PerformanceBehavior<TRequest, TResponse>> _logger = logger;
-    private readonly IUser _user = user;
-    private readonly Stopwatch _timer = new Stopwatch();
+    private readonly Stopwatch _timer = new();
 
     /// <summary>
     /// The threshold in milliseconds for logging performance warnings.
@@ -46,7 +44,7 @@ public class PerformanceBehavior<TRequest, TResponse>(ILogger<PerformanceBehavio
     {
         _timer.Start();
 
-        var response = await next();
+        var response = await next(cancellationToken);
 
         _timer.Stop();
 
@@ -56,52 +54,52 @@ public class PerformanceBehavior<TRequest, TResponse>(ILogger<PerformanceBehavio
         // Log performance metrics based on elapsed time
         if (elapsedMilliseconds > CriticalPerformanceThresholdMs)
         {
-            _logger.LogError(
+            logger.LogError(
                 "CRITICAL PERFORMANCE: Request {RequestName} took {ElapsedMilliseconds}ms to complete. " +
                 "User: {UserId}. Request: {@Request}",
                 requestName,
                 elapsedMilliseconds,
-                _user.IsAuthenticated && _user.Id.HasValue ? _user.Id.Value.ToString() : "Unknown",
+                user.IsAuthenticated && user.Id.HasValue ? user.Id.Value.ToString() : "Unknown",
                 request);
         }
         else if (elapsedMilliseconds > PerformanceThresholdMs)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 "SLOW REQUEST: Request {RequestName} took {ElapsedMilliseconds}ms to complete. " +
                 "User: {UserId}",
                 requestName,
                 elapsedMilliseconds,
-                _user.IsAuthenticated && _user.Id.HasValue ? _user.Id.Value.ToString() : "Unknown");
+                user.IsAuthenticated && user.Id.HasValue ? user.Id.Value.ToString() : "Unknown");
 
             // Log request details only in debug mode for performance warnings
-            if (_logger.IsEnabled(LogLevel.Debug))
+            if (logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug(
+                logger.LogDebug(
                     "Slow request {RequestName} details: {@Request}",
                     requestName,
                     request);
             }
         }
-        else if (_logger.IsEnabled(LogLevel.Debug))
+        else if (logger.IsEnabled(LogLevel.Debug))
         {
             // Log fast requests only in debug mode
-            _logger.LogDebug(
+            logger.LogDebug(
                 "Request {RequestName} completed in {ElapsedMilliseconds}ms",
                 requestName,
                 elapsedMilliseconds);
         }
 
         // Log performance metrics for structured logging and monitoring
-        using (_logger.BeginScope(new Dictionary<string, object>
+        using (logger.BeginScope(new Dictionary<string, object>
         {
             ["RequestName"] = requestName,
             ["ElapsedMilliseconds"] = elapsedMilliseconds,
-            ["UserId"] = _user.IsAuthenticated && _user.Id.HasValue ? _user.Id.Value : (object)"Unknown",
+            ["UserId"] = user.IsAuthenticated && user.Id.HasValue ? user.Id.Value : (object)"Unknown",
             ["IsSlowRequest"] = elapsedMilliseconds > PerformanceThresholdMs,
             ["IsCriticalPerformance"] = elapsedMilliseconds > CriticalPerformanceThresholdMs
         }))
         {
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Performance metrics for {RequestName}: {ElapsedMilliseconds}ms",
                 requestName,
                 elapsedMilliseconds);
