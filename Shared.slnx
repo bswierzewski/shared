@@ -22,10 +22,6 @@
     <Project Path="src/Shared.Infrastructure/Shared.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
-  <Folder Name="/src/Modules/Shared.Exceptions/">
-    <Project Path="src/Modules/Shared.Exceptions/Shared.Exceptions.Application/Shared.Exceptions.Application.csproj" />
-    <Project Path="src/Modules/Shared.Exceptions/Shared.Exceptions.Infrastructure/Shared.Exceptions.Infrastructure.csproj" />
-  </Folder>
   <Folder Name="/src/Modules/Shared.Users/">
     <Project Path="src/Modules/Shared.Users/Shared.Users.Application/Shared.Users.Application.csproj" />
     <Project Path="src/Modules/Shared.Users/Shared.Users.Domain/Shared.Users.Domain.csproj" />
@@ -38,7 +34,6 @@
     <Project Path="tests/Shared.Infrastructure.Tests.Unit/Shared.Infrastructure.Tests.Unit.csproj" />
   </Folder>
   <Folder Name="/tests/Modules/">
-    <Project Path="tests/Modules/Shared.Exceptions.Tests.EndToEnd/Shared.Exceptions.Tests.EndToEnd.csproj" />
     <Project Path="tests/Modules/Shared.Users.Tests.EndToEnd/Shared.Users.Tests.EndToEnd.csproj" />
   </Folder>
   <Folder Name="/tests/Tools/">

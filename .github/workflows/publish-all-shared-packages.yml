@@ -63,9 +63,6 @@ jobs:
       - name: Remove .env file
         run: rm -f ./tests/Modules/Shared.Users.Tests.EndToEnd/.env
 
-      - name: Run Shared.Exceptions Tests
-        run: dotnet test --no-build --configuration Release --verbosity normal tests/Modules/Shared.Exceptions.Tests.EndToEnd
-
       - name: Run Shared.EnvFileGenerator Tests
         run: dotnet test --configuration Release --verbosity normal tests/Tools/Shared.EnvFileGenerator.Tests.Unit
 
@@ -79,8 +76,6 @@ jobs:
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Domain
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Application
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Users/Shared.Users.Infrastructure
-          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Exceptions/Shared.Exceptions.Application
-          dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Modules/Shared.Exceptions/Shared.Exceptions.Infrastructure
           dotnet pack --no-build --configuration Release --output ./nupkg /p:Version=$VERSION src/Shared.Infrastructure.Tests
 
       - name: Publish to GitHub Packages
@@ -146,22 +141,6 @@ jobs:
         uses: actions/delete-package-versions@v4
         with:
           package-name: "Shared.Infrastructure.Tests"
-          package-type: "nuget"
-          min-versions-to-keep: 1
-          delete-only-pre-release-versions: "true"
-
-      - name: Delete old Shared.Exceptions.Application packages
-        uses: actions/delete-package-versions@v4
-        with:
-          package-name: "Shared.Exceptions.Application"
-          package-type: "nuget"
-          min-versions-to-keep: 1
-          delete-only-pre-release-versions: "true"
-
-      - name: Delete old Shared.Exceptions.Infrastructure packages
-        uses: actions/delete-package-versions@v4
-        with:
-          package-name: "Shared.Exceptions.Infrastructure"
           package-type: "nuget"
           min-versions-to-keep: 1
           delete-only-pre-release-versions: "true"
