@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
+    <OutputType>Library</OutputType>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <GenerateProgramFile>false</GenerateProgramFile>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
   </PropertyGroup>
 
@@ -12,9 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Modules\Shared.Users\Shared.Users.Infrastructure\Shared.Users.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Host\Shared.Host.csproj" />
     <ProjectReference Include="..\..\..\src\Shared.Infrastructure.Tests\Shared.Infrastructure.Tests.csproj" />
-    <ProjectReference Include="..\..\..\src\Shared.Infrastructure.Generators\Shared.Infrastructure.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

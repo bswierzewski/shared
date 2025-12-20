@@ -1,31 +1,45 @@
 using ErrorOr;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Application.DTOs;
+using System.Security.Claims;
 
 namespace Shared.Users.Application.Queries;
 
 /// <summary>
-/// Handler for GetUserByIdQuery
+/// Handler for GetCurrentUserQuery
+/// Retrieves the currently authenticated user from the database
 /// </summary>
-internal class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, ErrorOr<UserDto>>
+internal class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, ErrorOr<UserDto>>
 {
     private readonly IUsersDbContext _context;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public GetUserByIdQueryHandler(IUsersDbContext context)
+    public GetCurrentUserQueryHandler(IUsersDbContext context, IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
+        _httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task<ErrorOr<UserDto>> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ErrorOr<UserDto>> Handle(GetCurrentUserQuery request, CancellationToken cancellationToken)
     {
+        // Get the user ID from the claims (sub claim contains the user ID from Supabase)
+        var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)
+            ?? _httpContextAccessor.HttpContext?.User.FindFirst("sub");
+
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return Error.NotFound("User.NotAuthenticated", "User is not authenticated");
+        }
+
         var user = await _context.Users
             .AsNoTracking()
             .Include(u => u.ExternalProviders)
             .Include(u => u.Roles)
             .Include(u => u.Permissions)
-            .Where(u => u.Id == request.UserId)
+            .Where(u => u.Id == userId)
             .Select(u => new UserDto(
                 u.Id,
                 u.Email,

@@ -1,10 +1,10 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Domain.Enums;
 using Shared.Users.Infrastructure.Consts;
+using System.Security.Claims;
 
 namespace Shared.Users.Infrastructure.Middleware;
 
@@ -53,7 +53,6 @@ public class UserProvisioningMiddleware
 
         try
         {
-            // 1. EXTRACT FROM JWT
             var email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value
                 ?? claimsPrincipal.FindFirst("email")?.Value;
 
@@ -86,11 +85,9 @@ public class UserProvisioningMiddleware
                 provider = IdentityProvider.Other;
             }
 
-            // 2. JIT PROVISION (upsert)
             var user = await provisioningService.UpsertUserAsync(
                 provider, sub, email, displayName);
 
-            // 3. REPLACE NAMEIDENTIFIER WITH INTERNAL GUID
             var identity = claimsPrincipal.Identity as ClaimsIdentity;
             if (identity != null)
             {
@@ -104,7 +101,6 @@ public class UserProvisioningMiddleware
                 identity.AddClaim(new Claim(ClaimsConsts.UserId, user.Id.ToString()));
             }
 
-            // 4. LOAD ROLES/PERMISSIONS FROM DATABASE
             var userFull = await dbContext.Users
                 .AsNoTracking()
                 .Where(u => u.Id == user.Id)
@@ -114,7 +110,6 @@ public class UserProvisioningMiddleware
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
-            // 5. ADD TO CLAIMS
             if (identity != null && userFull != null)
             {
                 // Extract assigned role names (from Role entities)

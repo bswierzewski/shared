@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "shared.envfilegenerator": {
-      "version": "1.0.0-build.38",
+      "version": "1.0.0-build.56",
       "commands": [
         "shared"
       ],

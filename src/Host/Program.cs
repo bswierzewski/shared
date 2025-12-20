@@ -1,23 +1,24 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
+using DotNetEnv;
 using Shared.Abstractions.Modules;
-using Shared.Infrastructure.Exceptions;
+using Shared.Infrastructure.Extensions;
+using Shared.Infrastructure.Logging;
 using Shared.Users.Infrastructure.Extensions.Supabase;
 
-var options = new WebApplicationOptions
-{
-    Args = args,
-    ContentRootPath = AppContext.BaseDirectory
-};
+// Load environment variables from .env file BEFORE creating builder
+// clobberExistingVars: false ensures Docker/CI/CD environment variables take precedence
+if (File.Exists(".env"))
+    Env.Load();
 
-var builder = WebApplication.CreateBuilder(options);
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog with TraceId support
+builder.AddSerilog("Shared.Host");
 
 // Exception handling
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// OpenAPI/Swagger
-builder.Services.AddOpenApi();
+// OpenAPI/Swagger with enhanced ProblemDetails schemas
+builder.Services.AddOpenApi(options => options.AddProblemDetailsSchemas());
 
 // Register modules from auto-generated registry
 builder.Services.RegisterModules(builder.Configuration);
@@ -29,7 +30,7 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Exception handling
-app.UseExceptionHandler(options => { });
+app.UseExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -46,7 +47,7 @@ await app.Services.InitModules();
 await app.RunAsync();
 
 /// <summary>
-/// Test program class for Shared.Users module integration testing.
+/// Host application for local development and testing.
 /// [GenerateModuleRegistry] triggers source generator to create ModuleRegistry class.
 /// </summary>
 [GenerateModuleRegistry]

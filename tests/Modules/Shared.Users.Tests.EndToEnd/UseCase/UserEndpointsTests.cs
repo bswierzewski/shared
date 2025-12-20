@@ -1,8 +1,9 @@
-using System.Net;
 using Shared.Infrastructure.Tests.Core;
 using Shared.Infrastructure.Tests.Extensions.Http;
 using Shared.Users.Application.DTOs;
 using Shared.Users.Infrastructure.Persistence;
+using Shared.Users.Tests.EndToEnd.Extensions;
+using System.Net;
 
 namespace Shared.Users.Tests.EndToEnd.UseCase;
 
@@ -11,15 +12,20 @@ namespace Shared.Users.Tests.EndToEnd.UseCase;
 /// Tests user retrieval, role management, and permission management endpoints.
 /// </summary>
 [Collection("Users")]
-public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
+public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
 {
-    private readonly TestContext _context = fixture.Context;
-    private readonly UsersTestFixture _fixture = fixture;
+    private TestContext _context = null!;
 
     public async Task InitializeAsync()
     {
+        _context = await TestContext.CreateBuilder<Program>()
+            .WithContainer(fixture.Container)
+            .BuildAsync();
+
+        await _context.ResetDatabaseAsync();
+
         // Get token using fixture's provider (has built-in cache)
-        var token = await _fixture.TokenProvider.GetTokenAsync(_fixture.TestUser.Email, _fixture.TestUser.Password);
+        var token = await fixture.TokenProvider.GetTokenAsync(fixture.TestUser.Email, fixture.TestUser.Password);
         _context.Client.WithBearerToken(token);
     }
 
@@ -37,7 +43,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
         // Provision user
         await _context.Client.GetAsync("/api/users");
 
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Act - Get user by ID
         var response = await _context.Client.GetAsync($"/api/users/{user.Id}");
@@ -47,7 +53,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
         var userDto = await response.ReadAsJsonAsync<UserDto>();
         userDto.Should().NotBeNull();
         userDto!.Id.Should().Be(user.Id);
-        userDto.Email.Should().Be(_fixture.TestUser.Email);
+        userDto.Email.Should().Be(fixture.TestUser.Email);
     }
 
     /// <summary>
@@ -71,7 +77,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange - Provision user and get their ID
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Act - Assign role
         var response = await _context.Client.PostJsonAsync(
@@ -82,7 +88,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Verify role was assigned in database
-        var userWithRoles = await _context.GetUserWithRolesFromDbAsync(_fixture.TestUser.Email);
+        var userWithRoles = await _context.GetUserWithRolesFromDbAsync(fixture.TestUser.Email);
         userWithRoles.Roles.Should().Contain(r => r.Name == "admin");
     }
 
@@ -94,7 +100,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Act - Assign role first time
         var response1 = await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
@@ -106,7 +112,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
         // Assert - Second assignment should also succeed
         response2.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userWithRoles = await _context.GetUserWithRolesFromDbAsync(_fixture.TestUser.Email);
+        var userWithRoles = await _context.GetUserWithRolesFromDbAsync(fixture.TestUser.Email);
         // User should still have exactly one "admin" role, not duplicated
         userWithRoles.Roles.Count(r => r.Name == "admin").Should().Be(1);
     }
@@ -119,7 +125,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange - Provision user and assign role
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Assign role first
         await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
@@ -130,7 +136,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userAfterRemoval = await _context.GetUserWithRolesFromDbAsync(_fixture.TestUser.Email);
+        var userAfterRemoval = await _context.GetUserWithRolesFromDbAsync(fixture.TestUser.Email);
         userAfterRemoval.Roles.Should().NotContain(r => r.Name == "admin");
     }
 
@@ -142,7 +148,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Act - Try to remove role that was never assigned
         var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/roles/nonexistent");
@@ -159,7 +165,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange - Provision user
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Act - Grant permission
         var response = await _context.Client.PostJsonAsync(
@@ -169,7 +175,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userWithPerms = await _context.GetUserWithPermissionsFromDbAsync(_fixture.TestUser.Email);
+        var userWithPerms = await _context.GetUserWithPermissionsFromDbAsync(fixture.TestUser.Email);
         userWithPerms.Permissions.Should().Contain(p => p.Name == "users.view");
     }
 
@@ -181,7 +187,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         var reason = "Temporary elevated access for project X";
 
@@ -202,7 +208,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange - Provision user and grant permission
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Grant permission first
         await _context.Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.delete", new { });
@@ -213,7 +219,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userAfterRevoke = await _context.GetUserWithPermissionsFromDbAsync(_fixture.TestUser.Email);
+        var userAfterRevoke = await _context.GetUserWithPermissionsFromDbAsync(fixture.TestUser.Email);
         userAfterRevoke.Permissions.Should().NotContain(p => p.Name == "users.delete");
     }
 
@@ -225,7 +231,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Act - Try to revoke permission that was never granted
         var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/permissions/nonexistent");
@@ -243,7 +249,7 @@ public class UserEndpointsTests(UsersTestFixture fixture) : IAsyncLifetime
     {
         // Arrange
         await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
         // Act - Multiple operations
         await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });

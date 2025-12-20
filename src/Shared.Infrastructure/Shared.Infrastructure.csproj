@@ -4,6 +4,7 @@
   <PropertyGroup>
     <!-- Disable OpenAPI source generator due to .NET 10 compatibility issues -->
     <DisableOpenApiAnalyzers>true</DisableOpenApiAnalyzers>
+    <DisableOpenApiSourceGenerator>true</DisableOpenApiSourceGenerator>
 
     <!-- NuGet Metadata -->
     <PackageId>Shared.Infrastructure</PackageId>
@@ -44,7 +45,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- Exclude source generated files with known .NET 10 issues -->
+  <ItemGroup>
+    <Compile Remove="obj\**\Microsoft.AspNetCore.OpenApi.SourceGenerators\**\*.cs" />
   </ItemGroup>
 
 </Project>

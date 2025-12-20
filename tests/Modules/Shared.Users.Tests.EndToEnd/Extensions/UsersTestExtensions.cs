@@ -3,7 +3,7 @@ using Shared.Infrastructure.Tests.Core;
 using Shared.Users.Domain.Aggregates;
 using Shared.Users.Infrastructure.Persistence;
 
-namespace Shared.Users.Tests;
+namespace Shared.Users.Tests.EndToEnd.Extensions;
 
 /// <summary>
 /// Extension methods for Users module tests.

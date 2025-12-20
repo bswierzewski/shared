@@ -1,6 +1,7 @@
 using Shared.Infrastructure.Tests.Core;
 using Shared.Infrastructure.Tests.Extensions.Http;
 using Shared.Users.Infrastructure.Persistence;
+using Shared.Users.Tests.EndToEnd.Extensions;
 
 namespace Shared.Users.Tests.EndToEnd.UseCase;
 
@@ -10,15 +11,20 @@ namespace Shared.Users.Tests.EndToEnd.UseCase;
 /// with a new external provider or for the first time.
 /// </summary>
 [Collection("Users")]
-public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
+public class UserProvisioningTests(UsersSharedFixture fixture) : IAsyncLifetime
 {
-    private readonly TestContext _context = fixture.Context;
-    private readonly UsersTestFixture _fixture = fixture;
+    private TestContext _context = null!;
 
     public async Task InitializeAsync()
     {
+        _context = await TestContext.CreateBuilder<Program>()
+            .WithContainer(fixture.Container)
+            .BuildAsync();
+
+        await _context.ResetDatabaseAsync();
+
         // Get token using fixture's provider (has built-in cache)
-        var token = await _fixture.TokenProvider.GetTokenAsync(_fixture.TestUser.Email, _fixture.TestUser.Password);
+        var token = await fixture.TokenProvider.GetTokenAsync(fixture.TestUser.Email, fixture.TestUser.Password);
         _context.Client.WithBearerToken(token);
     }
 
@@ -39,12 +45,12 @@ public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
 
         // Assert - Endpoint should succeed (or return 401 if no GetAll, but user is provisioned)
         // The important part is that JIT provisioning happens in the middleware
-        var userExists = await _context.UserExistsAsync(_fixture.TestUser.Email);
+        var userExists = await _context.UserExistsAsync(fixture.TestUser.Email);
         userExists.Should().BeTrue();
 
         // Verify user was created with correct data
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
-        user.Email.Should().Be(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
+        user.Email.Should().Be(fixture.TestUser.Email);
         user.IsActive.Should().BeTrue();
     }
 
@@ -58,20 +64,20 @@ public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
         // Arrange - Provision user on first request
         // Act - First request
         await _context.Client.GetAsync("/api/users");
-        var firstUser = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var firstUser = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
         var firstUserId = firstUser.Id;
 
         // Act - Second request with same user
         await _context.Client.GetAsync("/api/users");
 
         // Assert - Same user should be updated, not duplicated
-        var secondUser = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var secondUser = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
         secondUser.Id.Should().Be(firstUserId);
 
         // Verify only one user with this email exists
         var db = _context.GetRequiredService<UsersDbContext>();
         var allWithEmail = await db.Users
-            .Where(u => u.Email == _fixture.TestUser.Email)
+            .Where(u => u.Email == fixture.TestUser.Email)
             .ToListAsync();
         allWithEmail.Should().HaveCount(1);
     }
@@ -86,7 +92,7 @@ public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
         // Arrange - Create user
         await _context.Client.GetAsync("/api/users");
 
-        var user1 = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user1 = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
         user1.LastLoginAt.Should().NotBeNull();
         var firstLogin = user1.LastLoginAt!.Value;
 
@@ -95,7 +101,7 @@ public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
         await _context.Client.GetAsync("/api/users");
 
         // Assert - Last login should be updated
-        var user2 = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user2 = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
         user2.LastLoginAt.Should().NotBeNull();
         user2.LastLoginAt!.Value.Should().BeAfter(firstLogin);
     }
@@ -110,7 +116,7 @@ public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
         // Arrange - Create user
         await _context.Client.GetAsync("/api/users");
 
-        var user1 = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user1 = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
         var providers1 = await _context.GetRequiredService<UsersDbContext>()
             .Users
             .Where(u => u.Id == user1.Id)
@@ -123,7 +129,7 @@ public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
         await _context.Client.GetAsync("/api/users");
 
         // Assert - Same user should still have only one provider (no duplication)
-        var user2 = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user2 = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
         user2.Id.Should().Be(user1.Id);
 
         var providersAfter = await _context.GetRequiredService<UsersDbContext>()
@@ -145,7 +151,7 @@ public class UserProvisioningTests(UsersTestFixture fixture) : IAsyncLifetime
         await _context.Client.GetAsync("/api/users");
 
         // Assert
-        var user = await _context.GetUserFromDbAsync(_fixture.TestUser.Email);
+        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
         user.IsActive.Should().BeTrue();
     }
 }

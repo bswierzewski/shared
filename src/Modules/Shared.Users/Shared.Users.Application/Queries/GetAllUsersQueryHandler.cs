@@ -7,25 +7,25 @@ using Shared.Users.Application.DTOs;
 namespace Shared.Users.Application.Queries;
 
 /// <summary>
-/// Handler for GetUserByIdQuery
+/// Handler for GetAllUsersQuery
+/// Retrieves all users from the database
 /// </summary>
-internal class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, ErrorOr<UserDto>>
+internal class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, ErrorOr<IReadOnlyCollection<UserDto>>>
 {
     private readonly IUsersDbContext _context;
 
-    public GetUserByIdQueryHandler(IUsersDbContext context)
+    public GetAllUsersQueryHandler(IUsersDbContext context)
     {
         _context = context;
     }
 
-    public async Task<ErrorOr<UserDto>> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ErrorOr<IReadOnlyCollection<UserDto>>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
     {
-        var user = await _context.Users
+        var users = await _context.Users
             .AsNoTracking()
             .Include(u => u.ExternalProviders)
             .Include(u => u.Roles)
             .Include(u => u.Permissions)
-            .Where(u => u.Id == request.UserId)
             .Select(u => new UserDto(
                 u.Id,
                 u.Email,
@@ -53,13 +53,8 @@ internal class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, Error
                         p.IsActive,
                         p.IsModule))
                     .ToList()))
-            .FirstOrDefaultAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
 
-        if (user == null)
-        {
-            return Error.NotFound("User.NotFound", "User not found");
-        }
-
-        return user;
+        return users;
     }
 }

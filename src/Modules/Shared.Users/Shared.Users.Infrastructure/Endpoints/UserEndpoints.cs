@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Shared.Infrastructure.Extensions;
 using Shared.Users.Application.Commands;
 using Shared.Users.Application.DTOs;
 using Shared.Users.Application.Queries;
@@ -31,6 +32,24 @@ public static class UserEndpoints
         var group = endpoints.MapGroup("/api/users")
             .WithTags("Users")
             .RequireAuthorization(); // All user endpoints require authentication
+
+        // GET /api/users/me - Query to get the current authenticated user
+        // Returns the profile of the currently logged-in user
+        group.MapGet("/me", GetCurrentUser)
+            .WithName("GetCurrentUser")
+            .WithDescription("Get the currently authenticated user's profile")
+            .Produces<UserDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        // GET /api/users - Query to get all users
+        // Returns a list of all users in the system
+        group.MapGet("/", GetAllUsers)
+            .WithName("GetAllUsers")
+            .WithDescription("Get all users in the system")
+            .Produces<IReadOnlyCollection<UserDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden);
 
         // GET /api/users/{userId} - Query to get a user by ID
         // Returns user profile including roles and external provider mappings
@@ -84,6 +103,60 @@ public static class UserEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        // Create a route group for roles
+        var rolesGroup = endpoints.MapGroup("/api/roles")
+            .WithTags("Roles")
+            .RequireAuthorization();
+
+        // GET /api/roles - Query to get all roles
+        // Returns a list of all roles in the system
+        rolesGroup.MapGet("/", GetAllRoles)
+            .WithName("GetAllRoles")
+            .WithDescription("Get all roles in the system")
+            .Produces<IReadOnlyCollection<RoleDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        // Create a route group for permissions
+        var permissionsGroup = endpoints.MapGroup("/api/permissions")
+            .WithTags("Permissions")
+            .RequireAuthorization();
+
+        // GET /api/permissions - Query to get all permissions
+        // Returns a list of all permissions in the system
+        permissionsGroup.MapGet("/", GetAllPermissions)
+            .WithName("GetAllPermissions")
+            .WithDescription("Get all permissions in the system")
+            .Produces<IReadOnlyCollection<PermissionDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden);
+    }
+
+    /// <summary>
+    /// Retrieves the currently authenticated user.
+    /// Returns complete user profile including roles and external provider mappings.
+    /// </summary>
+    /// <param name="mediator">MediatR instance for executing the query through the application layer</param>
+    /// <returns>HTTP 200 OK with user details or 404 if user not found</returns>
+    private static async Task<IResult> GetCurrentUser(IMediator mediator)
+    {
+        var query = new GetCurrentUserQuery();
+        var result = await mediator.Send(query);
+        return result.ToHttpResult();
+    }
+
+    /// <summary>
+    /// Retrieves all users in the system.
+    /// Returns a list of all users with their profiles.
+    /// </summary>
+    /// <param name="mediator">MediatR instance for executing the query through the application layer</param>
+    /// <returns>HTTP 200 OK with list of users</returns>
+    private static async Task<IResult> GetAllUsers(IMediator mediator)
+    {
+        var query = new GetAllUsersQuery();
+        var result = await mediator.Send(query);
+        return result.ToHttpResult();
     }
 
     /// <summary>
@@ -101,15 +174,9 @@ public static class UserEndpoints
         Guid userId,
         IMediator mediator)
     {
-        // Execute the query through the application layer
         var query = new GetUserByIdQuery(userId);
         var result = await mediator.Send(query);
-
-        // Return 200 OK with user data or 404 if not found
-        if (result == null)
-            return Results.NotFound();
-
-        return Results.Ok(result);
+        return result.ToHttpResult();
     }
 
     /// <summary>
@@ -225,5 +292,31 @@ public static class UserEndpoints
 
         // Return 200 OK on success
         return Results.Ok();
+    }
+
+    /// <summary>
+    /// Retrieves all roles in the system.
+    /// Returns a list of all roles.
+    /// </summary>
+    /// <param name="mediator">MediatR instance for executing the query through the application layer</param>
+    /// <returns>HTTP 200 OK with list of roles</returns>
+    private static async Task<IResult> GetAllRoles(IMediator mediator)
+    {
+        var query = new GetAllRolesQuery();
+        var result = await mediator.Send(query);
+        return result.ToHttpResult();
+    }
+
+    /// <summary>
+    /// Retrieves all permissions in the system.
+    /// Returns a list of all permissions.
+    /// </summary>
+    /// <param name="mediator">MediatR instance for executing the query through the application layer</param>
+    /// <returns>HTTP 200 OK with list of permissions</returns>
+    private static async Task<IResult> GetAllPermissions(IMediator mediator)
+    {
+        var query = new GetAllPermissionsQuery();
+        var result = await mediator.Send(query);
+        return result.ToHttpResult();
     }
 }
