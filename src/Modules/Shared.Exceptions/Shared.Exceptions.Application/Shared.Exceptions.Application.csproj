@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- NuGet Metadata -->
+    <PackageId>Shared.Exceptions.Application</PackageId>
+    <Version>1.0.0</Version>
+    <Title>Shared Exceptions Application</Title>
+    <Description>Application layer for exception testing with commands and handlers.</Description>
+    <Authors>bswierzewski</Authors>
+    <Company>bswierzewski</Company>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>exceptions;application;cqrs;error-handling;testing</PackageTags>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared.Abstractions\Shared.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="ErrorOr" />
+  </ItemGroup>
+
+</Project>

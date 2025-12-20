@@ -15,6 +15,7 @@
     <ProjectReference Include="..\Shared.Abstractions\Shared.Abstractions.csproj" />
     <ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Shared.Users\Shared.Users.Infrastructure\Shared.Users.Infrastructure.csproj" />
+	<ProjectReference Include="..\Modules\Shared.Exceptions\Shared.Exceptions.Infrastructure\Shared.Exceptions.Infrastructure.csproj" />
     <ProjectReference Include="..\Shared.Infrastructure.Generators\Shared.Infrastructure.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 

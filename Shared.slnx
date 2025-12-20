@@ -22,6 +22,10 @@
     <Project Path="src/Shared.Infrastructure/Shared.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Shared.Exceptions/">
+    <Project Path="src/Modules/Shared.Exceptions/Shared.Exceptions.Application/Shared.Exceptions.Application.csproj" />
+    <Project Path="src/Modules/Shared.Exceptions/Shared.Exceptions.Infrastructure/Shared.Exceptions.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Shared.Users/">
     <Project Path="src/Modules/Shared.Users/Shared.Users.Application/Shared.Users.Application.csproj" />
     <Project Path="src/Modules/Shared.Users/Shared.Users.Domain/Shared.Users.Domain.csproj" />
