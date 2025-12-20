@@ -11,8 +11,8 @@ if (File.Exists(".env"))
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog with TraceId support
-builder.AddSerilog("Shared.Host");
+// Configure Serilog - all settings in appsettings.json
+builder.AddSerilog();
 
 // Exception handling
 builder.Services.AddProblemDetails(options =>
@@ -32,6 +32,9 @@ var app = builder.Build();
 
 // Exception handling
 app.UseExceptionHandler();
+
+// Request logging with TraceId (MUST be after UseExceptionHandler)
+app.UseSerilogRequestLogging();
 
 app.UseAuthentication();
 

@@ -1,6 +1,5 @@
 using MediatR.Pipeline;
 using Microsoft.Extensions.Logging;
-using Shared.Abstractions.Authorization;
 
 namespace Shared.Infrastructure.Behaviors;
 
@@ -13,8 +12,7 @@ namespace Shared.Infrastructure.Behaviors;
 /// Initializes a new instance of the LoggingBehavior class.
 /// </remarks>
 /// <param name="logger">The logger instance.</param>
-/// <param name="user">The current user service.</param>
-public class LoggingBehavior<TRequest>(ILogger<LoggingBehavior<TRequest>> logger, IUser user) : IRequestPreProcessor<TRequest>
+public class LoggingBehavior<TRequest>(ILogger<LoggingBehavior<TRequest>> logger) : IRequestPreProcessor<TRequest>
     where TRequest : notnull
 {
     /// <summary>
@@ -25,10 +23,7 @@ public class LoggingBehavior<TRequest>(ILogger<LoggingBehavior<TRequest>> logger
     /// <returns></returns>
     public Task Process(TRequest request, CancellationToken cancellationToken)
     {
-        var requestName = typeof(TRequest).Name;
-
-        logger.LogInformation("Request: {Name} {@UserId} {@UserName} {@Request}",
-            requestName, user.Id, user.FullName, request);
+        logger.LogInformation("Handling: {RequestName}: {@Payload}", typeof(TRequest).Name, request);
 
         return Task.CompletedTask;
     }
