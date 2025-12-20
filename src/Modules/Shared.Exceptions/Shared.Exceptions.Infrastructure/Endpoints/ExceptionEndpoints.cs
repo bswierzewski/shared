@@ -53,6 +53,15 @@ public static class ExceptionEndpoints
             .Produces<string>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        // POST /api/exceptions/test-validation - Tests FluentValidation
+        // Demonstrates validation with 4 validation rules for 3 properties
+        group.MapPost("/test-validation", TestValidation)
+            .WithName("TestValidation")
+            .WithDescription("Tests FluentValidation - validates Name, Email, and Age")
+            .Produces<string>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
     }
 
     private static async Task<IResult> UnhandledError(ISender sender, CancellationToken cancellationToken)
@@ -76,6 +85,12 @@ public static class ExceptionEndpoints
     private static async Task<IResult> RoleProtected(ISender sender, CancellationToken cancellationToken)
     {
         var result = await sender.Send(new RoleProtectedCommand(), cancellationToken);
+        return result.ToHttpResult();
+    }
+
+    private static async Task<IResult> TestValidation(ISender sender, ValidationCommand command, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(command, cancellationToken);
         return result.ToHttpResult();
     }
 }
