@@ -43,6 +43,19 @@ public static class OpenApiExtensions
 
                 schema.Properties["errors"] = errorsSchema;
             }
+
+            if (!schema.Properties.ContainsKey("timestamp"))
+            {
+                var timestampSchema = await context.GetOrCreateSchemaAsync(
+                    type: typeof(DateTime),
+                    parameterDescription: null,
+                    cancellationToken: cancellationToken);
+
+                timestampSchema.Description = "The timestamp when the error occurred (UTC).";
+                timestampSchema.ReadOnly = true;
+
+                schema.Properties["timestamp"] = timestampSchema;
+            }
         });
 
         return options;

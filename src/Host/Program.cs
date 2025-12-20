@@ -15,7 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilog("Shared.Host");
 
 // Exception handling
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+    options.AddCustomConfiguration(builder.Environment));
 
 // OpenAPI/Swagger with enhanced ProblemDetails schemas
 builder.Services.AddOpenApi(options => options.AddProblemDetailsSchemas());
@@ -33,10 +34,13 @@ var app = builder.Build();
 app.UseExceptionHandler();
 
 app.UseAuthentication();
-app.UseAuthorization();
 
 // Use all modules (automatic middleware & endpoint configuration)
+// IMPORTANT: Must be BEFORE UseAuthorization() because UserProvisioningMiddleware
+// enriches ClaimsPrincipal with roles and permissions
 app.UseModules(builder.Configuration);
+
+app.UseAuthorization();
 
 // Map OpenAPI endpoint - available at /openapi/v1.json
 app.MapOpenApi();

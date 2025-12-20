@@ -57,7 +57,7 @@ public static class ErrorOrExtensions
         {
             return Results.ValidationProblem(
                 errors.ToDictionary(),
-                detail: firstError.Description,
+                detail: "One or more validation failures have occurred.",
                 title: GetTitleForStatusCode(statusCode),
                 type: GetTypeForStatusCode(statusCode),
                 statusCode: statusCode);
