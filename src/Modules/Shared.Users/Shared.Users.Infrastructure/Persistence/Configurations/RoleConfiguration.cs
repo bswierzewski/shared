@@ -16,7 +16,8 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
     /// <param name="builder">The entity type builder.</param>
     public void Configure(EntityTypeBuilder<Role> builder)
     {
-        builder.HasKey(r => r.Id);
+        // Name is the primary key (module-prefixed for global uniqueness)
+        builder.HasKey(r => r.Name);
 
         builder.Property(r => r.Name)
             .IsRequired()
@@ -38,10 +39,6 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
 
         builder.Property(r => r.ModuleName)
             .HasMaxLength(256);
-
-        // Unique constraint on role name
-        builder.HasIndex(r => r.Name)
-            .IsUnique();
 
         // Index on ModuleName for filtering roles by module
         builder.HasIndex(r => r.ModuleName);

@@ -24,11 +24,11 @@ internal class GetAllRolesQueryHandler : IRequestHandler<GetAllRolesQuery, Error
         var roles = await _context.Roles
             .AsNoTracking()
             .Select(r => new RoleDto(
-                r.Id,
                 r.Name,
                 r.Description,
                 r.IsActive,
-                r.IsModule))
+                r.IsModule,
+                r.ModuleName))
             .ToListAsync(cancellationToken);
 
         return roles;

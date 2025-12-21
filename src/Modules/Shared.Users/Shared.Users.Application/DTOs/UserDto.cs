@@ -9,8 +9,7 @@ public record UserDto(
     bool IsActive,
     DateTimeOffset? LastLoginAt,
     IReadOnlyCollection<ExternalProviderDto> ExternalProviders,
-    IReadOnlyCollection<RoleDto> Roles,
-    IReadOnlyCollection<PermissionDto> Permissions);
+    IReadOnlyCollection<RoleDto> Roles);
 
 /// <summary>
 /// Data Transfer Object for ExternalProvider
@@ -24,18 +23,18 @@ public record ExternalProviderDto(
 /// Data Transfer Object for Role
 /// </summary>
 public record RoleDto(
-    Guid Id,
     string Name,
     string? Description,
     bool IsActive,
-    bool IsModule);
+    bool IsModule,
+    string? ModuleName);
 
 /// <summary>
 /// Data Transfer Object for Permission
 /// </summary>
 public record PermissionDto(
-    Guid Id,
     string Name,
     string? Description,
     bool IsActive,
-    bool IsModule);
+    bool IsModule,
+    string? ModuleName);

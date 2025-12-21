@@ -25,7 +25,6 @@ internal class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, Error
             .AsNoTracking()
             .Include(u => u.ExternalProviders)
             .Include(u => u.Roles)
-            .Include(u => u.Permissions)
             .Select(u => new UserDto(
                 u.Id,
                 u.Email,
@@ -39,19 +38,11 @@ internal class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, Error
                     .ToList(),
                 u.Roles
                     .Select(r => new RoleDto(
-                        r.Id,
                         r.Name,
                         r.Description,
                         r.IsActive,
-                        r.IsModule))
-                    .ToList(),
-                u.Permissions
-                    .Select(p => new PermissionDto(
-                        p.Id,
-                        p.Name,
-                        p.Description,
-                        p.IsActive,
-                        p.IsModule))
+                        r.IsModule,
+                        r.ModuleName))
                     .ToList()))
             .ToListAsync(cancellationToken);
 

@@ -24,11 +24,11 @@ internal class GetAllPermissionsQueryHandler : IRequestHandler<GetAllPermissions
         var permissions = await _context.Permissions
             .AsNoTracking()
             .Select(p => new PermissionDto(
-                p.Id,
                 p.Name,
                 p.Description,
                 p.IsActive,
-                p.IsModule))
+                p.IsModule,
+                p.ModuleName))
             .ToListAsync(cancellationToken);
 
         return permissions;

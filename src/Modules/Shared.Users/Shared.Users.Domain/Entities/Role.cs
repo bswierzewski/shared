@@ -10,12 +10,8 @@ public class Role
     private readonly List<Aggregates.User> _users = new();
 
     /// <summary>
-    /// Unique role identifier
-    /// </summary>
-    public Guid Id { get; private set; }
-
-    /// <summary>
-    /// Role name (e.g., "Admin", "Editor", "Viewer")
+    /// Unique role identifier and primary key (e.g., "users.admin", "users.editor")
+    /// Uses module-prefixed naming for global uniqueness
     /// </summary>
     public string Name { get; private set; } = null!;
 
@@ -78,14 +74,18 @@ public class Role
     /// <summary>
     /// Create a new role
     /// </summary>
-    public static Role Create(string name, string? description = null, bool isModule = false, string? moduleName = null)
+    public static Role Create(
+        string name,
+        string? description = null,
+        bool isModule = false,
+        string? moduleName = null,
+        IReadOnlyCollection<Permission>? permissions = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Role name cannot be empty", nameof(name));
 
-        return new Role
+        var role = new Role
         {
-            Id = Guid.NewGuid(),
             Name = name,
             Description = description,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -93,6 +93,13 @@ public class Role
             IsModule = isModule,
             ModuleName = moduleName
         };
+
+        // Add permissions if provided
+        if (permissions != null)
+            foreach (var permission in permissions)
+                role.AddPermission(permission);
+
+        return role;
     }
 
     /// <summary>

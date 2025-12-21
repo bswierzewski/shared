@@ -7,4 +7,4 @@ namespace Shared.Users.Application.Commands;
 /// </summary>
 public record RemoveRoleFromUserCommand(
     Guid UserId,
-    string RoleName) : IRequest;
+    string RoleId) : IRequest;

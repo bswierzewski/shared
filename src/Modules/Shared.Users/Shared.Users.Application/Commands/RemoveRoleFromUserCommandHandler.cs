@@ -26,9 +26,9 @@ internal class RemoveRoleFromUserCommandHandler : IRequestHandler<RemoveRoleFrom
         if (user == null)
             throw new InvalidOperationException($"User {request.UserId} not found");
 
-        // Find the role by name
+        // Find the role by Name
         var role = await _context.Roles
-            .FirstOrDefaultAsync(r => r.Name == request.RoleName, cancellationToken);
+            .FirstOrDefaultAsync(r => r.Name == request.RoleId, cancellationToken);
 
         // If role doesn't exist, operation is idempotent (no-op)
         if (role == null)

@@ -6,7 +6,7 @@ using Shared.Users.Domain.Enums;
 namespace Shared.Users.Domain.Aggregates;
 
 /// <summary>
-/// User aggregate root - manages user data, roles, permissions, and external provider mappings.
+/// User aggregate root - manages user data, roles, and external provider mappings.
 /// Aggregate root in Domain-Driven Design: the only entity that can be referenced from outside the aggregate.
 ///
 /// Responsibilities:
@@ -14,14 +14,12 @@ namespace Shared.Users.Domain.Aggregates;
 /// - Track last login timestamp
 /// - Manage external provider mappings (multiple providers for same user email)
 /// - Manage role assignments
-/// - Manage direct permission grants
 /// Note: Display name comes from JWT token and is not persisted - it's metadata from the provider
 /// </summary>
 public class User : AggregateRoot<Guid>
 {
     private readonly List<ExternalProvider> _externalProviders = new();
     private readonly List<Role> _roles = new();
-    private readonly List<Permission> _permissions = new();
 
     /// <summary>
     /// User's email address (unique identifier for JIT provisioning)
@@ -49,12 +47,6 @@ public class User : AggregateRoot<Guid>
     /// User has a role = row exists in User_Role table
     /// </summary>
     public IReadOnlyCollection<Role> Roles => _roles.AsReadOnly();
-
-    /// <summary>
-    /// Directly granted permissions (Many-to-Many relationship with Permission table)
-    /// User has a permission = row exists in User_Permission table
-    /// </summary>
-    public IReadOnlyCollection<Permission> Permissions => _permissions.AsReadOnly();
 
     /// <summary>
     /// Private constructor for EF Core only
@@ -138,7 +130,7 @@ public class User : AggregateRoot<Guid>
             throw new ArgumentNullException(nameof(role));
 
         // Check if user already has this role
-        if (_roles.Any(r => r.Id == role.Id))
+        if (_roles.Any(r => r.Name == role.Name))
             return;
 
         _roles.Add(role);
@@ -160,41 +152,6 @@ public class User : AggregateRoot<Guid>
         {
             // Emit domain event only if role was actually removed
             AddDomainEvent(new UserRoleAssignedEvent(Id, role.Name)); // Or create RemoveRoleEvent
-        }
-    }
-
-    /// <summary>
-    /// Grant a direct permission to this user
-    /// </summary>
-    /// <param name="permission">The permission to grant</param>
-    public void GrantPermission(Permission permission)
-    {
-        if (permission == null)
-            throw new ArgumentNullException(nameof(permission));
-
-        // Check if user already has this permission
-        if (_permissions.Any(p => p.Id == permission.Id))
-            return;
-
-        _permissions.Add(permission);
-
-        // Emit domain event
-        AddDomainEvent(new UserPermissionGrantedEvent(Id, permission.Name));
-    }
-
-    /// <summary>
-    /// Revoke a direct permission from this user
-    /// </summary>
-    /// <param name="permission">The permission to revoke</param>
-    public void RevokePermission(Permission permission)
-    {
-        if (permission == null)
-            throw new ArgumentNullException(nameof(permission));
-
-        if (_permissions.Remove(permission))
-        {
-            // Emit domain event only if permission was actually removed
-            AddDomainEvent(new UserPermissionGrantedEvent(Id, permission.Name)); // Or create RevokePermissionEvent
         }
     }
 }

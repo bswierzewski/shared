@@ -92,10 +92,8 @@ public class UserProvisioningMiddleware
             if (identity != null)
             {
                 var nameIdClaim = identity.FindFirst(ClaimTypes.NameIdentifier);
-                if (nameIdClaim != null)
-                {
-                    identity.RemoveClaim(nameIdClaim);
-                }
+                if (nameIdClaim != null)                
+                    identity.RemoveClaim(nameIdClaim);                
 
                 identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
                 identity.AddClaim(new Claim(ClaimsConsts.UserId, user.Id.ToString()));
@@ -106,7 +104,6 @@ public class UserProvisioningMiddleware
                 .Where(u => u.Id == user.Id)
                 .Include(u => u.Roles)
                     .ThenInclude(r => r.Permissions)
-                .Include(u => u.Permissions)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
@@ -124,27 +121,17 @@ public class UserProvisioningMiddleware
                     identity.AddClaim(new Claim(ClaimTypes.Role, roleName));
                 }
 
-                // Extract all permission names (direct grants + from roles)
-                var directPermissions = userFull.Permissions
-                    .Where(p => p.IsActive) // Only active permissions
-                    .Select(p => p.Name)
-                    .ToHashSet();
-
-                // Add permissions from assigned roles
-                var rolePermissions = userFull.Roles
+                // Extract all permission names from roles
+                var allPermissions = userFull.Roles
                     .Where(r => r.IsActive)
                     .SelectMany(r => r.Permissions)
                     .Where(p => p.IsActive)
                     .Select(p => p.Name)
-                    .ToHashSet();
+                    .Distinct()
+                    .ToList();
 
-                // Combine both sets
-                var allPermissions = directPermissions.Union(rolePermissions).ToList();
-
-                foreach (var permission in allPermissions)
-                {
-                    identity.AddClaim(new Claim(ClaimsConsts.Permission, permission));
-                }
+                foreach (var permission in allPermissions)                
+                    identity.AddClaim(new Claim(ClaimsConsts.Permission, permission));                
 
                 _logger.LogInformation("JIT provisioned user {UserId} ({Email}) with {RoleCount} roles and {PermissionCount} permissions",
                     user.Id, email, roleNames.Count, allPermissions.Count);

@@ -99,35 +99,80 @@ public class UsersModule : IModule
     }
 
     /// <summary>
-    /// Defines the permissions available in the Users module.
-    /// These permissions are automatically synchronized to the database during module initialization.
-    /// </summary>
-    public IEnumerable<Permission> GetPermissions()
-    {
-        return
-        [
-            new Permission("users.view", "View users", Name, "View user information"),
-            new Permission("users.create", "Create users", Name, "Create new users"),
-            new Permission("users.edit", "Edit users", Name, "Edit user profiles"),
-            new Permission("users.delete", "Delete users", Name, "Delete users"),
-            new Permission("users.assign_roles", "Assign roles", Name, "Assign roles to users"),
-            new Permission("users.manage_permissions", "Manage permissions", Name, "Grant/revoke permissions"),
-        ];
-    }
-
-    /// <summary>
     /// Defines the roles available in the Users module.
     /// These roles are automatically synchronized to the database during module initialization.
+    /// Each role contains its associated permissions.
     /// </summary>
     public IEnumerable<Role> GetRoles()
     {
-        var permissions = GetPermissions().ToList();
+        // Define permissions
+        var viewUsers = new Permission(
+            ModuleConstants.Permissions.View,
+            "View Users",
+            Name,
+            "View user information");
 
+        var createUsers = new Permission(
+            ModuleConstants.Permissions.Create,
+            "Create Users",
+            Name,
+            "Create new users");
+
+        var editUsers = new Permission(
+            ModuleConstants.Permissions.Edit,
+            "Edit Users",
+            Name,
+            "Edit user profiles");
+
+        var deleteUsers = new Permission(
+            ModuleConstants.Permissions.Delete,
+            "Delete Users",
+            Name,
+            "Delete users");
+
+        var assignRoles = new Permission(
+            ModuleConstants.Permissions.AssignRoles,
+            "Assign Roles",
+            Name,
+            "Assign roles to users");
+
+        var managePermissions = new Permission(
+            ModuleConstants.Permissions.ManagePermissions,
+            "Manage Permissions",
+            Name,
+            "Grant/revoke permissions");
+
+        // Define roles
         return
         [
-            new Role("admin", "Administrator", Name, permissions.AsReadOnly()),
-            new Role("editor", "Editor", Name, permissions.Where(p => p.Name is "users.view" or "users.edit" or "users.assign_roles").ToList().AsReadOnly()),
-            new Role("viewer", "Viewer", Name, permissions.Where(p => p.Name is "users.view").ToList().AsReadOnly())
+            new Role(
+                ModuleConstants.Roles.Admin,
+                "Administrator",
+                Name,
+                new[]
+                {
+                    viewUsers,
+                    createUsers,
+                    editUsers,
+                    deleteUsers,
+                    assignRoles,
+                    managePermissions
+                }.AsReadOnly(),
+                "Full access to user management"),
+
+            new Role(
+                ModuleConstants.Roles.Editor,
+                "Editor",
+                Name,
+                new[] { viewUsers, editUsers, assignRoles }.AsReadOnly(),
+                "Can view and edit users"),
+
+            new Role(
+                ModuleConstants.Roles.Viewer,
+                "Viewer",
+                Name,
+                new[] { viewUsers }.AsReadOnly(),
+                "Can only view users")
         ];
     }
 }

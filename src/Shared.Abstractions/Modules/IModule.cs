@@ -19,13 +19,6 @@ public interface IModule
     string Name { get; }
 
     /// <summary>
-    /// Gets the permissions defined by this module.
-    /// Override this method to provide module-specific permissions.
-    /// </summary>
-    /// <returns>A collection of permissions provided by this module.</returns>
-    IEnumerable<Permission> GetPermissions() => Enumerable.Empty<Permission>();
-
-    /// <summary>
     /// Gets the roles defined by this module.
     /// Override this method to provide module-specific roles with their associated permissions.
     /// </summary>

@@ -16,7 +16,8 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
     /// <param name="builder">The entity type builder.</param>
     public void Configure(EntityTypeBuilder<Permission> builder)
     {
-        builder.HasKey(p => p.Id);
+        // Name is the primary key (module-prefixed for global uniqueness)
+        builder.HasKey(p => p.Name);
 
         builder.Property(p => p.Name)
             .IsRequired()
@@ -39,10 +40,6 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
         builder.Property(p => p.ModuleName)
             .HasMaxLength(256);
 
-        // Unique constraint on permission name
-        builder.HasIndex(p => p.Name)
-            .IsUnique();
-
         // Index on ModuleName for filtering permissions by module
         builder.HasIndex(p => p.ModuleName);
 
@@ -52,13 +49,10 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
         // Index on IsModule for filtering module vs custom permissions
         builder.HasIndex(p => p.IsModule);
 
-        // Many-to-Many: Permission <-> Role (detailed configuration in RolePermissionConfiguration)
+        // Many-to-Many: Permission <-> Role (EF Core will auto-create join table)
         builder.HasMany(p => p.Roles)
             .WithMany(r => r.Permissions)
-            .UsingEntity<RolePermission>();
-
-        // Note: Permission <-> User relationship is already configured in UserConfiguration
-        // to avoid defining the same relationship from both sides (Single Source of Truth)
+            .UsingEntity(j => j.ToTable("Role_Permission"));
 
         // Configure EF Core to use backing fields for navigation properties
         // This is crucial for Include() to work with IReadOnlyCollection properties

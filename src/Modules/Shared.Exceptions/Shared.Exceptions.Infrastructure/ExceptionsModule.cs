@@ -64,27 +64,33 @@ public class ExceptionsModule : IModule
     }
 
     /// <summary>
-    /// Defines the permissions available in the Exceptions module.
-    /// </summary>
-    public IEnumerable<Permission> GetPermissions()
-    {
-        return
-        [
-            new Permission("exceptions.test", "Test exceptions", Name, "Test exception handling"),
-            new Permission("exceptions.test.admin", "Test admin exceptions", Name, "Test admin-level exception handling"),
-        ];
-    }
-
-    /// <summary>
     /// Defines the roles available in the Exceptions module.
+    /// Each role contains its associated permissions.
     /// </summary>
     public IEnumerable<Role> GetRoles()
     {
-        var permissions = GetPermissions().ToList();
+        // Define permissions
+        var testExceptions = new Permission(
+            ModuleConstants.Permissions.Test,
+            "Test Exceptions",
+            Name,
+            "Test exception handling");
 
+        var testAdminExceptions = new Permission(
+            ModuleConstants.Permissions.TestAdmin,
+            "Test Admin Exceptions",
+            Name,
+            "Test admin-level exception handling");
+
+        // Define roles
         return
         [
-            new Role("exception_tester", "Exception Tester", Name, permissions.AsReadOnly()),
+            new Role(
+                ModuleConstants.Roles.Tester,
+                "Exception Tester",
+                Name,
+                new[] { testExceptions, testAdminExceptions }.AsReadOnly(),
+                "Role for testing exception handling")
         ];
     }
 }

@@ -38,7 +38,6 @@ internal class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery,
             .AsNoTracking()
             .Include(u => u.ExternalProviders)
             .Include(u => u.Roles)
-            .Include(u => u.Permissions)
             .Where(u => u.Id == userId)
             .Select(u => new UserDto(
                 u.Id,
@@ -53,19 +52,11 @@ internal class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery,
                     .ToList(),
                 u.Roles
                     .Select(r => new RoleDto(
-                        r.Id,
                         r.Name,
                         r.Description,
                         r.IsActive,
-                        r.IsModule))
-                    .ToList(),
-                u.Permissions
-                    .Select(p => new PermissionDto(
-                        p.Id,
-                        p.Name,
-                        p.Description,
-                        p.IsActive,
-                        p.IsModule))
+                        r.IsModule,
+                        r.ModuleName))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);
 

@@ -7,16 +7,10 @@ namespace Shared.Users.Domain.Entities;
 public class Permission
 {
     private readonly List<Role> _roles = new();
-    private readonly List<Aggregates.User> _users = new();
 
     /// <summary>
-    /// Unique permission identifier
-    /// </summary>
-    public Guid Id { get; private set; }
-
-    /// <summary>
-    /// Permission name (e.g., "users.view", "users.edit", "products.delete")
-    /// Uses dot notation for hierarchical organization
+    /// Unique permission identifier and primary key (e.g., "users.view", "users.edit")
+    /// Uses module-prefixed dot notation for hierarchical organization and global uniqueness
     /// </summary>
     public string Name { get; private set; } = null!;
 
@@ -29,11 +23,6 @@ public class Permission
     /// Roles that have this permission (Many-to-Many relationship)
     /// </summary>
     public IReadOnlyCollection<Role> Roles => _roles.AsReadOnly();
-
-    /// <summary>
-    /// Users that have this permission directly granted (Many-to-Many relationship)
-    /// </summary>
-    public IReadOnlyCollection<Aggregates.User> Users => _users.AsReadOnly();
 
     /// <summary>
     /// When the permission was created
@@ -79,14 +68,17 @@ public class Permission
     /// <summary>
     /// Create a new permission
     /// </summary>
-    public static Permission Create(string name, string? description = null, bool isModule = false, string? moduleName = null)
+    public static Permission Create(
+        string name,
+        string? description = null,
+        bool isModule = false,
+        string? moduleName = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Permission name cannot be empty", nameof(name));
 
         return new Permission
         {
-            Id = Guid.NewGuid(),
             Name = name,
             Description = description,
             CreatedAt = DateTimeOffset.UtcNow,

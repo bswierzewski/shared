@@ -9,7 +9,7 @@ namespace Shared.Users.Tests.EndToEnd.UseCase;
 
 /// <summary>
 /// E2E tests for Users module HTTP endpoints.
-/// Tests user retrieval, role management, and permission management endpoints.
+/// Tests user retrieval and role management endpoints.
 /// </summary>
 [Collection("Users")]
 public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
@@ -70,7 +70,7 @@ public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
     }
 
     /// <summary>
-    /// Tests the POST /api/users/{userId}/roles/{roleName} endpoint assigns a role to user.
+    /// Tests the POST /api/users/{userId}/roles endpoint assigns a role to user.
     /// </summary>
     [Fact]
     public async Task AssignRoleToUser_ShouldSucceed()
@@ -79,10 +79,15 @@ public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
         await _context.Client.GetAsync("/api/users");
         var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
+        // Get admin role ID
+        var rolesResponse = await _context.Client.GetAsync("/api/roles");
+        var roles = await rolesResponse.ReadAsJsonAsync<List<RoleDto>>();
+        var adminRole = roles!.First(r => r.Name == "admin");
+
         // Act - Assign role
         var response = await _context.Client.PostJsonAsync(
-            $"/api/users/{user.Id}/roles/admin",
-            new { });
+            $"/api/users/{user.Id}/roles",
+            new { roleIds = new[] { adminRole.Name } });
 
         // Assert - Endpoint returns success
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -102,12 +107,21 @@ public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
         await _context.Client.GetAsync("/api/users");
         var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
+        // Get admin role ID
+        var rolesResponse = await _context.Client.GetAsync("/api/roles");
+        var roles = await rolesResponse.ReadAsJsonAsync<List<RoleDto>>();
+        var adminRole = roles!.First(r => r.Name == "admin");
+
         // Act - Assign role first time
-        var response1 = await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
+        var response1 = await _context.Client.PostJsonAsync(
+            $"/api/users/{user.Id}/roles",
+            new { roleIds = new[] { adminRole.Name } });
         response1.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Act - Assign same role second time
-        var response2 = await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
+        var response2 = await _context.Client.PostJsonAsync(
+            $"/api/users/{user.Id}/roles",
+            new { roleIds = new[] { adminRole.Name } });
 
         // Assert - Second assignment should also succeed
         response2.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -118,7 +132,7 @@ public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
     }
 
     /// <summary>
-    /// Tests the DELETE /api/users/{userId}/roles/{roleName} endpoint removes a role from user.
+    /// Tests the DELETE /api/users/{userId}/roles/{roleId} endpoint removes a role from user.
     /// </summary>
     [Fact]
     public async Task RemoveRoleFromUser_ShouldSucceed()
@@ -127,11 +141,18 @@ public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
         await _context.Client.GetAsync("/api/users");
         var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
+        // Get admin role ID
+        var rolesResponse = await _context.Client.GetAsync("/api/roles");
+        var roles = await rolesResponse.ReadAsJsonAsync<List<RoleDto>>();
+        var adminRole = roles!.First(r => r.Name == "admin");
+
         // Assign role first
-        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
+        await _context.Client.PostJsonAsync(
+            $"/api/users/{user.Id}/roles",
+            new { roleIds = new[] { adminRole.Name } });
 
         // Act - Remove role
-        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/roles/admin");
+        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/roles/{adminRole.Name}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -150,99 +171,17 @@ public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
         await _context.Client.GetAsync("/api/users");
         var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
-        // Act - Try to remove role that was never assigned
-        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/roles/nonexistent");
+        // Act - Try to remove role with random GUID that doesn't exist
+        var nonExistentRoleId = Guid.NewGuid();
+        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/roles/{nonExistentRoleId}");
 
         // Assert - Should still return success (idempotent)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     /// <summary>
-    /// Tests the POST /api/users/{userId}/permissions/{permissionName} endpoint grants a permission.
-    /// </summary>
-    [Fact]
-    public async Task GrantPermissionToUser_ShouldSucceed()
-    {
-        // Arrange - Provision user
-        await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
-
-        // Act - Grant permission
-        var response = await _context.Client.PostJsonAsync(
-            $"/api/users/{user.Id}/permissions/users.view",
-            new { });
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var userWithPerms = await _context.GetUserWithPermissionsFromDbAsync(fixture.TestUser.Email);
-        userWithPerms.Permissions.Should().Contain(p => p.Name == "users.view");
-    }
-
-    /// <summary>
-    /// Tests granting permission with a reason query parameter.
-    /// </summary>
-    [Fact]
-    public async Task GrantPermissionToUser_WithReason_ShouldSucceed()
-    {
-        // Arrange
-        await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
-
-        var reason = "Temporary elevated access for project X";
-
-        // Act - Grant permission with reason
-        var response = await _context.Client.PostJsonAsync(
-            $"/api/users/{user.Id}/permissions/users.manage_permissions?reason={System.Web.HttpUtility.UrlEncode(reason)}",
-            new { });
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    /// <summary>
-    /// Tests the DELETE /api/users/{userId}/permissions/{permissionName} endpoint revokes a permission.
-    /// </summary>
-    [Fact]
-    public async Task RevokePermissionFromUser_ShouldSucceed()
-    {
-        // Arrange - Provision user and grant permission
-        await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
-
-        // Grant permission first
-        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.delete", new { });
-
-        // Act - Revoke permission
-        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/permissions/users.delete");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var userAfterRevoke = await _context.GetUserWithPermissionsFromDbAsync(fixture.TestUser.Email);
-        userAfterRevoke.Permissions.Should().NotContain(p => p.Name == "users.delete");
-    }
-
-    /// <summary>
-    /// Tests that revoking a permission that doesn't exist is idempotent.
-    /// </summary>
-    [Fact]
-    public async Task RevokePermissionFromUser_NonExistent_ShouldSucceed()
-    {
-        // Arrange
-        await _context.Client.GetAsync("/api/users");
-        var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
-
-        // Act - Try to revoke permission that was never granted
-        var response = await _context.Client.DeleteAsync($"/api/users/{user.Id}/permissions/nonexistent");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    /// <summary>
-    /// Tests multiple operations on the same user in a single test.
-    /// Assigns roles and permissions, then verifies both are present.
+    /// Tests multiple role assignments on the same user in a single test.
+    /// Assigns multiple roles, then verifies they are present.
     /// </summary>
     [Fact]
     public async Task MultipleOperations_ShouldAllSucceed()
@@ -251,25 +190,28 @@ public class UserEndpointsTests(UsersSharedFixture fixture) : IAsyncLifetime
         await _context.Client.GetAsync("/api/users");
         var user = await _context.GetUserFromDbAsync(fixture.TestUser.Email);
 
-        // Act - Multiple operations
-        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/admin", new { });
-        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/roles/editor", new { });
-        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.view", new { });
-        await _context.Client.PostJsonAsync($"/api/users/{user.Id}/permissions/users.edit", new { });
+        // Get all roles to find admin and editor role IDs
+        var rolesResponse = await _context.Client.GetAsync("/api/roles");
+        rolesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var roles = await rolesResponse.ReadAsJsonAsync<List<RoleDto>>();
+        var adminRole = roles!.First(r => r.Name == "admin");
+        var editorRole = roles!.First(r => r.Name == "editor");
 
-        // Assert - All operations should be persisted
+        // Act - Assign multiple roles at once
+        var response = await _context.Client.PostJsonAsync(
+            $"/api/users/{user.Id}/roles",
+            new { roleIds = new[] { adminRole.Name, editorRole.Name } });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Assert - All roles should be persisted
         var userFinal = await _context.GetRequiredService<UsersDbContext>()
             .Users
             .Include(u => u.Roles)
-            .Include(u => u.Permissions)
             .FirstAsync(u => u.Id == user.Id);
 
         userFinal.Roles.Should().HaveCount(2);
         userFinal.Roles.Should().Contain(r => r.Name == "admin");
         userFinal.Roles.Should().Contain(r => r.Name == "editor");
-
-        userFinal.Permissions.Should().HaveCount(2);
-        userFinal.Permissions.Should().Contain(p => p.Name == "users.view");
-        userFinal.Permissions.Should().Contain(p => p.Name == "users.edit");
     }
 }

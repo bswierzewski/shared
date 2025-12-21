@@ -44,15 +44,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithMany(r => r.Users)
             .UsingEntity<UserRole>();
 
-        // Many-to-Many: User <-> Permission (detailed configuration in UserPermissionConfiguration)
-        builder.HasMany(u => u.Permissions)
-            .WithMany(p => p.Users)
-            .UsingEntity<UserPermission>();
-
         // Configure EF Core to use backing fields for navigation properties
         // This is crucial for Include() to work with IReadOnlyCollection properties
         builder.Navigation(u => u.ExternalProviders).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(u => u.Roles).UsePropertyAccessMode(PropertyAccessMode.Field);
-        builder.Navigation(u => u.Permissions).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

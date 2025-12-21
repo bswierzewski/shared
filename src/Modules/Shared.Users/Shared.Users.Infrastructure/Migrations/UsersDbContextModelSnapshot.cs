@@ -17,10 +17,25 @@ namespace Shared.Users.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("PermissionRole", b =>
+                {
+                    b.Property<string>("PermissionsName")
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("RolesName")
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("PermissionsName", "RolesName");
+
+                    b.HasIndex("RolesName");
+
+                    b.ToTable("Role_Permission", (string)null);
+                });
 
             modelBuilder.Entity("Shared.Users.Domain.Aggregates.User", b =>
                 {
@@ -91,9 +106,9 @@ namespace Shared.Users.Infrastructure.Migrations
 
             modelBuilder.Entity("Shared.Users.Domain.Entities.Permission", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -116,30 +131,22 @@ namespace Shared.Users.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.HasKey("Id");
+                    b.HasKey("Name");
 
                     b.HasIndex("IsActive");
 
                     b.HasIndex("IsModule");
 
                     b.HasIndex("ModuleName");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
 
                     b.ToTable("Permissions");
                 });
 
             modelBuilder.Entity("Shared.Users.Domain.Entities.Role", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -162,12 +169,7 @@ namespace Shared.Users.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.HasKey("Id");
+                    b.HasKey("Name");
 
                     b.HasIndex("IsActive");
 
@@ -175,40 +177,7 @@ namespace Shared.Users.Infrastructure.Migrations
 
                     b.HasIndex("ModuleName");
 
-                    b.HasIndex("Name")
-                        .IsUnique();
-
                     b.ToTable("Roles");
-                });
-
-            modelBuilder.Entity("Shared.Users.Domain.Entities.RolePermission", b =>
-                {
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("PermissionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("RoleId", "PermissionId");
-
-                    b.HasIndex("PermissionId");
-
-                    b.ToTable("Role_Permission", (string)null);
-                });
-
-            modelBuilder.Entity("Shared.Users.Domain.Entities.UserPermission", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("PermissionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("UserId", "PermissionId");
-
-                    b.HasIndex("PermissionId");
-
-                    b.ToTable("User_Permission", (string)null);
                 });
 
             modelBuilder.Entity("Shared.Users.Domain.Entities.UserRole", b =>
@@ -219,11 +188,32 @@ namespace Shared.Users.Infrastructure.Migrations
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("RolesName")
+                        .IsRequired()
+                        .HasColumnType("character varying(256)");
+
                     b.HasKey("UserId", "RoleId");
 
                     b.HasIndex("RoleId");
 
+                    b.HasIndex("RolesName");
+
                     b.ToTable("User_Role", (string)null);
+                });
+
+            modelBuilder.Entity("PermissionRole", b =>
+                {
+                    b.HasOne("Shared.Users.Domain.Entities.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionsName")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Shared.Users.Domain.Entities.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RolesName")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Shared.Users.Domain.Entities.ExternalProvider", b =>
@@ -235,41 +225,11 @@ namespace Shared.Users.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Shared.Users.Domain.Entities.RolePermission", b =>
-                {
-                    b.HasOne("Shared.Users.Domain.Entities.Permission", null)
-                        .WithMany()
-                        .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Shared.Users.Domain.Entities.Role", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Shared.Users.Domain.Entities.UserPermission", b =>
-                {
-                    b.HasOne("Shared.Users.Domain.Entities.Permission", null)
-                        .WithMany()
-                        .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Shared.Users.Domain.Aggregates.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Shared.Users.Domain.Entities.UserRole", b =>
                 {
                     b.HasOne("Shared.Users.Domain.Entities.Role", null)
                         .WithMany()
-                        .HasForeignKey("RoleId")
+                        .HasForeignKey("RolesName")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

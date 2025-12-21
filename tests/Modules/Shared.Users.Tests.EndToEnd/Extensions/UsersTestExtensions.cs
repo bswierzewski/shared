@@ -44,20 +44,6 @@ public static class UsersTestExtensions
     }
 
     /// <summary>
-    /// Retrieves a user with their permissions loaded.
-    /// </summary>
-    public static async Task<User> GetUserWithPermissionsFromDbAsync(
-        this TestContext context,
-        string email)
-    {
-        var db = context.GetRequiredService<UsersDbContext>();
-        return await db.Users
-            .AsNoTracking()
-            .Include(u => u.Permissions)
-            .FirstAsync(u => u.Email == email);
-    }
-
-    /// <summary>
     /// Checks if a user exists in the database.
     /// </summary>
     public static async Task<bool> UserExistsAsync(

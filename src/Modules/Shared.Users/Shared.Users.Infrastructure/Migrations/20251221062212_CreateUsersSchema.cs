@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Shared.Users.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class CreateUsersSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,7 +15,6 @@ namespace Shared.Users.Infrastructure.Migrations
                 name: "Permissions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -25,14 +24,13 @@ namespace Shared.Users.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Permissions", x => x.Id);
+                    table.PrimaryKey("PK_Permissions", x => x.Name);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -42,7 +40,7 @@ namespace Shared.Users.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Roles", x => x.Id);
+                    table.PrimaryKey("PK_Roles", x => x.Name);
                 });
 
             migrationBuilder.CreateTable(
@@ -67,23 +65,23 @@ namespace Shared.Users.Infrastructure.Migrations
                 name: "Role_Permission",
                 columns: table => new
                 {
-                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PermissionId = table.Column<Guid>(type: "uuid", nullable: false)
+                    PermissionsName = table.Column<string>(type: "character varying(256)", nullable: false),
+                    RolesName = table.Column<string>(type: "character varying(256)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Role_Permission", x => new { x.RoleId, x.PermissionId });
+                    table.PrimaryKey("PK_Role_Permission", x => new { x.PermissionsName, x.RolesName });
                     table.ForeignKey(
-                        name: "FK_Role_Permission_Permissions_PermissionId",
-                        column: x => x.PermissionId,
+                        name: "FK_Role_Permission_Permissions_PermissionsName",
+                        column: x => x.PermissionsName,
                         principalTable: "Permissions",
-                        principalColumn: "Id",
+                        principalColumn: "Name",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Role_Permission_Roles_RoleId",
-                        column: x => x.RoleId,
+                        name: "FK_Role_Permission_Roles_RolesName",
+                        column: x => x.RolesName,
                         principalTable: "Roles",
-                        principalColumn: "Id",
+                        principalColumn: "Name",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -109,44 +107,21 @@ namespace Shared.Users.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "User_Permission",
-                columns: table => new
-                {
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PermissionId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_User_Permission", x => new { x.UserId, x.PermissionId });
-                    table.ForeignKey(
-                        name: "FK_User_Permission_Permissions_PermissionId",
-                        column: x => x.PermissionId,
-                        principalTable: "Permissions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_User_Permission_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "User_Role",
                 columns: table => new
                 {
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RoleId = table.Column<Guid>(type: "uuid", nullable: false)
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RolesName = table.Column<string>(type: "character varying(256)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_User_Role", x => new { x.UserId, x.RoleId });
                     table.ForeignKey(
-                        name: "FK_User_Role_Roles_RoleId",
-                        column: x => x.RoleId,
+                        name: "FK_User_Role_Roles_RolesName",
+                        column: x => x.RolesName,
                         principalTable: "Roles",
-                        principalColumn: "Id",
+                        principalColumn: "Name",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_User_Role_Users_UserId",
@@ -183,15 +158,9 @@ namespace Shared.Users.Infrastructure.Migrations
                 column: "ModuleName");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Permissions_Name",
-                table: "Permissions",
-                column: "Name",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Role_Permission_PermissionId",
+                name: "IX_Role_Permission_RolesName",
                 table: "Role_Permission",
-                column: "PermissionId");
+                column: "RolesName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Roles_IsActive",
@@ -209,20 +178,14 @@ namespace Shared.Users.Infrastructure.Migrations
                 column: "ModuleName");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Roles_Name",
-                table: "Roles",
-                column: "Name",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_User_Permission_PermissionId",
-                table: "User_Permission",
-                column: "PermissionId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_User_Role_RoleId",
                 table: "User_Role",
                 column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_User_Role_RolesName",
+                table: "User_Role",
+                column: "RolesName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
@@ -239,9 +202,6 @@ namespace Shared.Users.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Role_Permission");
-
-            migrationBuilder.DropTable(
-                name: "User_Permission");
 
             migrationBuilder.DropTable(
                 name: "User_Role");

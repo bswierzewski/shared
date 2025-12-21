@@ -5,7 +5,7 @@ using Shared.Users.Application.Abstractions;
 namespace Shared.Users.Application.Commands;
 
 /// <summary>
-/// Handler for assigning a role to a user
+/// Handler for assigning one or more roles to a user
 /// </summary>
 internal class AssignRoleToUserCommandHandler : IRequestHandler<AssignRoleToUserCommand>
 {
@@ -26,15 +26,22 @@ internal class AssignRoleToUserCommandHandler : IRequestHandler<AssignRoleToUser
         if (user == null)
             throw new InvalidOperationException($"User {request.UserId} not found");
 
-        // Find the role by name
-        var role = await _context.Roles
-            .FirstOrDefaultAsync(r => r.Name == request.RoleName, cancellationToken);
+        // Load all requested roles by Names
+        var roles = await _context.Roles
+            .Where(r => request.RoleIds.Contains(r.Name))
+            .ToListAsync(cancellationToken);
 
-        if (role == null)
-            throw new InvalidOperationException($"Role '{request.RoleName}' not found");
+        // Verify all roles exist
+        if (roles.Count != request.RoleIds.Count())
+        {
+            var missingIds = request.RoleIds.Except(roles.Select(r => r.Name));
+            throw new InvalidOperationException($"Roles not found: {string.Join(", ", missingIds)}");
+        }
 
-        // Assign role to user
-        user.AssignRole(role);
+        // Assign all roles to the user
+        foreach (var role in roles)        
+            user.AssignRole(role);        
+
         await _context.SaveChangesAsync(cancellationToken);
     }
 }
