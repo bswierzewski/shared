@@ -1,4 +1,4 @@
-namespace Shared.Abstractions.Abstractions;
+namespace Shared.Abstractions.Primitives;
 
 /// <summary>
 /// Base class for value objects in Domain-Driven Design.

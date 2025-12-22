@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Modules;
 using Shared.Infrastructure.Tests.Core;
 using Shared.Infrastructure.Tests.Infrastructure.Containers;

@@ -1,7 +1,8 @@
 using DotNetEnv;
-using Shared.Abstractions.Modules;
+using Shared.Exceptions.Infrastructure;
 using Shared.Infrastructure.Extensions;
 using Shared.Infrastructure.Logging;
+using Shared.Users.Infrastructure;
 using Shared.Users.Infrastructure.Extensions.Supabase;
 
 // Load environment variables from .env file BEFORE creating builder
@@ -22,7 +23,10 @@ builder.Services.AddProblemDetails(options =>
 builder.Services.AddOpenApi(options => options.AddProblemDetailsSchemas());
 
 // Register modules from auto-generated registry
-builder.Services.RegisterModules(builder.Configuration);
+builder.Services.RegisterModules(builder.Configuration,
+    new UsersModule(),
+    new ExceptionsModule()
+    );
 
 builder.Services.AddAuthentication()
     .AddSupabaseJwtBearer();
@@ -53,9 +57,4 @@ await app.Services.InitModules();
 
 await app.RunAsync();
 
-/// <summary>
-/// Host application for local development and testing.
-/// [GenerateModuleRegistry] triggers source generator to create ModuleRegistry class.
-/// </summary>
-[GenerateModuleRegistry]
 public partial class Program { }

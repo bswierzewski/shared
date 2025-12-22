@@ -1,30 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<PackageId>Shared.Exceptions.Infrastructure</PackageId>
+		<Title>Shared Exceptions Infrastructure Layer</Title>
+		<Description>Infrastructure implementation for exception testing, including API endpoints.</Description>
+		<PackageTags>exceptions;infrastructure;error-handling</PackageTags>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <!-- NuGet Metadata -->
-    <PackageId>Shared.Exceptions.Infrastructure</PackageId>
-    <Version>1.0.0</Version>
-    <Title>Shared Exceptions Module</Title>
-    <Description>Exception testing module with endpoints for error handling scenarios.</Description>
-    <Authors>bswierzewski</Authors>
-    <Company>bswierzewski</Company>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>exceptions;infrastructure;error-handling;testing</PackageTags>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-  </PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Shared.Exceptions.Application\Shared.Exceptions.Application.csproj" />
+		<ProjectReference Include="..\..\..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Shared.Exceptions.Application\Shared.Exceptions.Application.csproj" />
-    <ProjectReference Include="..\..\..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MediatR" />
-    <PackageReference Include="FluentValidation" />
-    <PackageReference Include="ErrorOr" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-  </ItemGroup>
-
+	<ItemGroup>
+		<PackageReference Include="MediatR" />
+		<PackageReference Include="FluentValidation" />
+		<PackageReference Include="ErrorOr" />
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+	</ItemGroup>
 </Project>

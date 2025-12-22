@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Shared.Abstractions.Abstractions;
-using Shared.Abstractions.Authorization;
 
 namespace Shared.Infrastructure.Persistence.Interceptors;
 
@@ -14,9 +13,8 @@ namespace Shared.Infrastructure.Persistence.Interceptors;
 /// </remarks>
 /// <param name="user">The current user (nullable for scenarios without authentication).</param>
 /// <param name="dateTime">The time provider for consistent time handling.</param>
-public sealed class AuditableEntityInterceptor(IUser? user, TimeProvider dateTime) : SaveChangesInterceptor
+public sealed class AuditableEntityInterceptor(IUser user, TimeProvider dateTime) : SaveChangesInterceptor
 {
-    private readonly IUser? _user = user;
     private readonly TimeProvider _dateTime = dateTime;
 
     /// <summary>
@@ -63,12 +61,12 @@ public sealed class AuditableEntityInterceptor(IUser? user, TimeProvider dateTim
                 {
                     // During JIT provisioning, _user.Id will be null (system-created)
                     // After provisioning, it will be the internal GUID
-                    entry.Entity.CreatedBy = _user?.Id;
+                    entry.Entity.CreatedBy = user.Id;
                     entry.Entity.CreatedAt = utcNow;
                 }
 
                 // For modifications, _user.Id will be the internal GUID
-                entry.Entity.ModifiedBy = _user?.Id;
+                entry.Entity.ModifiedBy = user.Id;
                 entry.Entity.ModifiedAt = utcNow;
             }
         }

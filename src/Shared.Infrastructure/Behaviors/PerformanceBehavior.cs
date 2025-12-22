@@ -1,7 +1,7 @@
 using MediatR;
-using Shared.Abstractions.Authorization;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using Shared.Abstractions.Abstractions;
 
 namespace Shared.Infrastructure.Behaviors;
 
@@ -59,7 +59,7 @@ public class PerformanceBehavior<TRequest, TResponse>(ILogger<PerformanceBehavio
                 "User: {UserId}. Request: {@Request}",
                 requestName,
                 elapsedMilliseconds,
-                user.IsAuthenticated && user.Id.HasValue ? user.Id.Value.ToString() : "Unknown",
+                user.Id.ToString(),
                 request);
         }
         else if (elapsedMilliseconds > PerformanceThresholdMs)
@@ -69,7 +69,7 @@ public class PerformanceBehavior<TRequest, TResponse>(ILogger<PerformanceBehavio
                 "User: {UserId}",
                 requestName,
                 elapsedMilliseconds,
-                user.IsAuthenticated && user.Id.HasValue ? user.Id.Value.ToString() : "Unknown");
+                user.Id.ToString());
 
             // Log request details only in debug mode for performance warnings
             if (logger.IsEnabled(LogLevel.Debug))
@@ -94,7 +94,7 @@ public class PerformanceBehavior<TRequest, TResponse>(ILogger<PerformanceBehavio
         {
             ["RequestName"] = requestName,
             ["ElapsedMilliseconds"] = elapsedMilliseconds,
-            ["UserId"] = user.IsAuthenticated && user.Id.HasValue ? user.Id.Value : (object)"Unknown",
+            ["UserId"] = user.Id.ToString(),
             ["IsSlowRequest"] = elapsedMilliseconds > PerformanceThresholdMs,
             ["IsCriticalPerformance"] = elapsedMilliseconds > CriticalPerformanceThresholdMs
         }))

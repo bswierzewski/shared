@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using Shared.Abstractions.Authorization;
+using Shared.Abstractions.Abstractions;
 using Shared.Users.Infrastructure.Consts;
 
 namespace Shared.Users.Infrastructure.Services;
@@ -30,12 +30,12 @@ internal class CurrentUserService : IUser
     /// <summary>
     /// Internal user ID (internal GUID set by JitProvisioningMiddleware)
     /// </summary>
-    public Guid? Id
+    public Guid Id
     {
         get
         {
             var userIdClaim = ClaimsPrincipal.FindFirst(ClaimsConsts.UserId)?.Value;
-            return Guid.TryParse(userIdClaim, out var id) ? id : null;
+            return Guid.TryParse(userIdClaim, out var id) ? id : Guid.Empty;
         }
     }
 
@@ -48,22 +48,6 @@ internal class CurrentUserService : IUser
     /// Display name from JWT or database
     /// </summary>
     public string? FullName => ClaimsPrincipal.FindFirst(ClaimTypes.Name)?.Value;
-
-    /// <summary>
-    /// Picture URL from JWT or database
-    /// </summary>
-    public string? PictureUrl => ClaimsPrincipal.FindFirst(ClaimsConsts.PictureUrl)?.Value;
-
-    /// <summary>
-    /// Is user authenticated (has valid JWT token)
-    /// </summary>
-    public bool IsAuthenticated => ClaimsPrincipal.Identity?.IsAuthenticated ?? false;
-
-    /// <summary>
-    /// All claims from enriched ClaimsPrincipal
-    /// </summary>
-    public IEnumerable<string> Claims
-        => ClaimsPrincipal.Claims.Select(c => $"{c.Type}:{c.Value}") ?? Enumerable.Empty<string>();
 
     /// <summary>
     /// Roles from ClaimTypes.Role claims (enriched by middleware from database)
@@ -80,12 +64,6 @@ internal class CurrentUserService : IUser
 
     public bool IsInRole(string role)
         => Roles.Contains(role);
-
-    public bool HasClaim(string claimType, string? claimValue = null)
-    {
-        var claim = ClaimsPrincipal.FindFirst(claimType);
-        return claimValue == null ? claim != null : claim?.Value == claimValue;
-    }
 
     public bool HasPermission(string permission)
         => Permissions.Contains(permission);

@@ -1,14 +1,9 @@
-using FluentValidation;
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Npgsql;
+using Shared.Abstractions.Abstractions;
 using Shared.Abstractions.Authorization;
-using Shared.Abstractions.Modules;
 using Shared.Infrastructure.Extensions;
 using Shared.Infrastructure.Modules;
 using Shared.Infrastructure.Persistence.Migrations;
@@ -25,37 +20,52 @@ namespace Shared.Users.Infrastructure;
 
 /// <summary>
 /// Users module - provides JIT user provisioning with role-based access control.
-///
-/// Features:
-/// - Just-In-Time (JIT) user provisioning from external identity providers
-/// - Email-based provider linking (multiple external providers → single internal user)
-/// - Role and permission management
-/// - Claims enrichment via JitProvisioningMiddleware
-/// - IUser implementation reading from enriched ClaimsPrincipal
-/// - Atomic caching with cache stampede prevention
-///
-/// This module is responsible for:
-/// - Registering its own services, MediatR handlers, and validators in Register()
-/// - Configuring its own middleware and endpoints in Use()
 /// </summary>
-public class UsersModule : IModule
+public partial class UsersModule : IModule
 {
-    /// <summary>
-    /// Gets the unique name of the Users module
-    /// </summary>
-    public string Name => ModuleConstants.ModuleName;
+    public string Name => Module.Name;
 
-    /// <summary>
-    /// Registers Users module services, DbContext, MediatR handlers, and validators.
-    /// This module is responsible for registering everything it needs.
-    /// </summary>
+    public IEnumerable<Permission> Permissions { get; }
+
+    public IEnumerable<Role> Roles { get; }
+
+    public UsersModule()
+    {
+        var builder = new AuthorizationBuilder(Module.Name);
+
+        builder
+            .AddPermission(Module.Permissions.View, "View Users", "Allows viewing user profiles and list")
+            .AddPermission(Module.Permissions.Create, "Create Users", "Allows registering new users")
+            .AddPermission(Module.Permissions.Edit, "Edit Users", "Allows modifying existing user accounts")
+            .AddPermission(Module.Permissions.Delete, "Delete Users", "Allows removing users from the system");
+
+        builder
+            .AddRole(Module.Roles.Admin, "Administrator", "Full management access", [
+                Module.Permissions.View,
+                Module.Permissions.Create,
+                Module.Permissions.Edit,
+                Module.Permissions.Delete,
+            ])
+            .AddRole(Module.Roles.Editor, "Editor", "Can view and manage users but not delete them", [
+                Module.Permissions.View,
+                Module.Permissions.Edit,
+                Module.Permissions.Create
+            ])
+            .AddRole(Module.Roles.Viewer, "Viewer", "Read-only access", [
+                Module.Permissions.View
+            ]);
+
+        (Permissions, Roles) = builder.Build();
+    }
+
+    /// <inheritdoc/>
     public void Register(IServiceCollection services, IConfiguration configuration)
     {
         // Register HttpContextAccessor (required for IUser implementation to access ClaimsPrincipal)
         services.AddHttpContextAccessor();
 
         // Register module services using fluent ModuleBuilder API
-        services.AddModule(configuration, Name)
+        services.AddModule(configuration, Module.Name)
             .AddOptions((svc, config) =>
             {
                 svc.ConfigureOptions<UsersDbContextOptions>(config);
@@ -83,10 +93,8 @@ public class UsersModule : IModule
         app.UseMiddleware<UserProvisioningMiddleware>();
 
         // Map user management endpoints
-        if (app is Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpointRouteBuilder)
-        {
-            endpointRouteBuilder.MapUserEndpoints();
-        }
+        if (app is Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpointRouteBuilder)        
+            endpointRouteBuilder.MapUserEndpoints();        
     }
 
     /// <summary>
@@ -96,83 +104,5 @@ public class UsersModule : IModule
     {
         await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
         await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Defines the roles available in the Users module.
-    /// These roles are automatically synchronized to the database during module initialization.
-    /// Each role contains its associated permissions.
-    /// </summary>
-    public IEnumerable<Role> GetRoles()
-    {
-        // Define permissions
-        var viewUsers = new Permission(
-            ModuleConstants.Permissions.View,
-            "View Users",
-            Name,
-            "View user information");
-
-        var createUsers = new Permission(
-            ModuleConstants.Permissions.Create,
-            "Create Users",
-            Name,
-            "Create new users");
-
-        var editUsers = new Permission(
-            ModuleConstants.Permissions.Edit,
-            "Edit Users",
-            Name,
-            "Edit user profiles");
-
-        var deleteUsers = new Permission(
-            ModuleConstants.Permissions.Delete,
-            "Delete Users",
-            Name,
-            "Delete users");
-
-        var assignRoles = new Permission(
-            ModuleConstants.Permissions.AssignRoles,
-            "Assign Roles",
-            Name,
-            "Assign roles to users");
-
-        var managePermissions = new Permission(
-            ModuleConstants.Permissions.ManagePermissions,
-            "Manage Permissions",
-            Name,
-            "Grant/revoke permissions");
-
-        // Define roles
-        return
-        [
-            new Role(
-                ModuleConstants.Roles.Admin,
-                "Administrator",
-                Name,
-                new[]
-                {
-                    viewUsers,
-                    createUsers,
-                    editUsers,
-                    deleteUsers,
-                    assignRoles,
-                    managePermissions
-                }.AsReadOnly(),
-                "Full access to user management"),
-
-            new Role(
-                ModuleConstants.Roles.Editor,
-                "Editor",
-                Name,
-                new[] { viewUsers, editUsers, assignRoles }.AsReadOnly(),
-                "Can view and edit users"),
-
-            new Role(
-                ModuleConstants.Roles.Viewer,
-                "Viewer",
-                Name,
-                new[] { viewUsers }.AsReadOnly(),
-                "Can only view users")
-        ];
     }
 }

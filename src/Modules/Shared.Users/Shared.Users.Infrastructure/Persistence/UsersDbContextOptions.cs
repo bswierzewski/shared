@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Shared.Abstractions.Options;
+using Shared.Abstractions.Abstractions;
 using Shared.Users.Domain;
 
 namespace Shared.Users.Infrastructure.Persistence;
@@ -12,7 +12,7 @@ public class UsersDbContextOptions : IOptions
     /// <summary>
     /// The configuration section name for Users module database configuration.
     /// </summary>
-    public static string SectionName => $"Modules:{ModuleConstants.ModuleName}";
+    public static string SectionName => $"Modules:{Module.Name}";
 
     /// <summary>
     /// The database connection string for the Users module.

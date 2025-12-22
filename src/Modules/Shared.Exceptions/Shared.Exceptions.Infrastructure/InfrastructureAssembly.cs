@@ -1,4 +1,4 @@
-using Shared.Abstractions.Modules;
+using Shared.Abstractions.Abstractions;
 
 namespace Shared.Exceptions.Infrastructure;
 

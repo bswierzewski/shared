@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Shared.Users.Application.Options;
@@ -53,8 +52,8 @@ public class SupabaseTokenProvider : ITokenProvider
     public async Task<string> GetTokenAsync(string email, string password)
     {
         // Check if token is cached and still valid
-        if (_tokenCache.TryGetValue(email, out var cached) && cached.expiresAt > DateTime.UtcNow)        
-            return cached.token;        
+        if (_tokenCache.TryGetValue(email, out var cached) && cached.expiresAt > DateTime.UtcNow)
+            return cached.token;
 
         var tokenEndpoint = $"{_supabaseOptions.Authority.TrimEnd('/')}/auth/v1/token?grant_type=password";
 
@@ -106,19 +105,6 @@ public class SupabaseTokenProvider : ITokenProvider
 
     private DateTime GetTokenExpiration(string token)
     {
-        try
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-            var expiration = jwtToken.ValidTo;
-
-            // Return expiration time minus 30 seconds buffer to refresh before actual expiration
-            return expiration.AddSeconds(-30);
-        }
-        catch
-        {
-            // If we can't parse the token, assume it expires in 1 hour
-            return DateTime.UtcNow.AddHours(1);
-        }
+        return DateTime.UtcNow.AddHours(1);
     }
 }

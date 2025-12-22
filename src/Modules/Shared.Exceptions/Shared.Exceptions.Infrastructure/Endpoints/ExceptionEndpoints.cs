@@ -84,7 +84,7 @@ public static class ExceptionEndpoints
 
     private static async Task<IResult> RoleProtected(ISender sender, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RoleProtectedCommand(), cancellationToken);
+        var result = await sender.Send(new AuthorizeCommand(), cancellationToken);
         return result.ToHttpResult();
     }
 

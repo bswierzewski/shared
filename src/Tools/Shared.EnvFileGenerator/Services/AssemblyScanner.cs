@@ -1,7 +1,7 @@
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using System.Reflection;
-using Shared.Abstractions.Options;
+using Shared.Abstractions.Abstractions;
 
 namespace Shared.EnvFileGenerator.Services;
 

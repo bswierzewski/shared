@@ -1,7 +1,7 @@
 using ErrorOr;
 using MediatR;
 using Shared.Abstractions.Authorization;
-using static Shared.Exceptions.Application.ModuleConstants;
+using static Shared.Exceptions.Application.Module;
 
 namespace Shared.Exceptions.Application.Commands;
 
@@ -10,5 +10,5 @@ namespace Shared.Exceptions.Application.Commands;
 /// Used for testing authorization behavior when user doesn't have the required role.
 /// Authorization is enforced via AuthorizeAttribute and validated in the MediatR pipeline.
 /// </summary>
-[Authorize(Roles = Roles.Tester)] // Note: Using Users module's admin role
-public record RoleProtectedCommand : IRequest<ErrorOr<string>>;
+[Authorize(Permissions = [Permissions.View, Permissions.Create])]
+public record AuthorizeCommand : IRequest<ErrorOr<string>>;

@@ -1,59 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
 	<PropertyGroup>
+		<!-- Set to false if this is a shared library providing test base classes -->
 		<IsTestProject>false</IsTestProject>
-
-		<!-- NuGet Package Metadata -->
 		<PackageId>Shared.Infrastructure.Tests</PackageId>
-		<Version>1.0.0</Version>
-		<Title>Shared Infrastructure Tests</Title>
-		<Description>Base classes and utilities for integration testing infrastructure components. Provides TestBase, WebApplicationFactory, and helper extensions for E2E tests.</Description>
-		<Authors>bswierzewski</Authors>
-		<Company>bswierzewski</Company>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-		<RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
-		<RepositoryType>git</RepositoryType>
-		<PackageTags>testing;integration;e2e;infrastructure;testcontainers;postgresql</PackageTags>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<Title>Shared Infrastructure Testing Utilities</Title>
+		<Description>Base classes and Testcontainers helpers for integration testing.</Description>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="README.md" Pack="true" PackagePath="\" />
-	</ItemGroup>
-
-	<!-- Project Dependencies -->
-	<ItemGroup>
 		<ProjectReference Include="..\..\src\Shared.Infrastructure\Shared.Infrastructure.csproj" />
 		<ProjectReference Include="..\..\src\Shared.Abstractions\Shared.Abstractions.csproj" />
-		<ProjectReference Include="..\..\src\Modules\Shared.Users\Shared.Users.Domain\Shared.Users.Domain.csproj" />
-		<ProjectReference Include="..\..\src\Modules\Shared.Users\Shared.Users.Application\Shared.Users.Application.csproj" />
+		<ProjectReference Include="..\Modules\Shared.Users\Shared.Users.Application\Shared.Users.Application.csproj" />
 	</ItemGroup>
 
-	<!-- External Dependencies -->
 	<ItemGroup>
-		<!-- Always Available - exported to all consumers for direct use in tests -->
-		<PackageReference Include="DotNetEnv" />
+		<!-- Exported dependencies (available to projects referencing this test library) -->
 		<PackageReference Include="FluentAssertions" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-		<PackageReference Include="Microsoft.Extensions.Logging" />
 		<PackageReference Include="Moq" />
-		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-		<PackageReference Include="System.IdentityModel.Tokens.Jwt" />
 		<PackageReference Include="xunit" />
+		<PackageReference Include="DotNetEnv" />
 
-		<!-- Internal Implementation - not exported to consumers (PrivateAssets="All") -->
+		<!-- Internal dependencies (not exported) -->
 		<PackageReference Include="Microsoft.NET.Test.Sdk" PrivateAssets="All" />
 		<PackageReference Include="Respawn" PrivateAssets="All" />
-		<PackageReference Include="Testcontainers" PrivateAssets="All" />
 		<PackageReference Include="Testcontainers.PostgreSql" PrivateAssets="All" />
 		<PackageReference Include="xunit.runner.visualstudio" PrivateAssets="All" />
 	</ItemGroup>
-	
-	<!-- Global Using Statements -->
+
 	<ItemGroup>
 		<Using Include="Xunit" />
 		<Using Include="FluentAssertions" />

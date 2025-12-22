@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Shared.Abstractions.Options;
+using Shared.Abstractions.Abstractions;
 
 namespace Shared.Infrastructure.Extensions;
 

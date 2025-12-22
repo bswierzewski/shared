@@ -1,14 +1,19 @@
 <Project>
+	<PropertyGroup>
+		<!-- General Compilation Settings -->
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
-  <!-- Build Configuration -->
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors />
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
-
+		<!-- NuGet Package Metadata -->
+		<Authors>bswierzewski</Authors>
+		<Company>bswierzewski</Company>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<Copyright>Copyright © $([System.DateTime]::Now.Year) bswierzewski</Copyright>
+	</PropertyGroup>
 </Project>

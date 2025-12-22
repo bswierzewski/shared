@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Shared.Abstractions.Options;
+using Shared.Abstractions.Abstractions;
 using Shared.Users.Domain;
 
 namespace Shared.Users.Application.Options;
@@ -12,7 +12,7 @@ public class SupabaseOptions : IOptions
     /// <summary>
     /// The configuration section name for Supabase options.
     /// </summary>
-    public static string SectionName => $"Modules:{ModuleConstants.ModuleName}:Supabase";
+    public static string SectionName => $"Modules:{Module.Name}:Supabase";
 
     /// <summary>
     /// The Supabase project URL (e.g., https://your-project.supabase.co).

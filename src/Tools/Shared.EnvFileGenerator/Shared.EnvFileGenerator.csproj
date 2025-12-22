@@ -1,26 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-
-    <!-- Global Tool Configuration -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>shared</ToolCommandName>
-
-    <!-- NuGet Metadata -->
     <PackageId>Shared.EnvFileGenerator</PackageId>
-    <Version>1.0.0</Version>
-    <Title>Shared EnvFileGenerator</Title>
-    <Description>CLI utility for generating .env files from IOptions implementations in Shared projects.</Description>
-    <Authors>bswierzewski</Authors>
-    <Company>bswierzewski</Company>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>cli;tools;utilities;configuration;environment;dotnet-tool</PackageTags>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <Description>CLI tool for generating .env files based on project abstractions.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,9 +14,4 @@
   <ItemGroup>
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>
-  </ItemGroup>
-
 </Project>

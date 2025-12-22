@@ -1,30 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<IsTestProject>true</IsTestProject>
+		<IsPackable>false</IsPackable>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<!-- Suppress missing XML comment warnings in tests -->
+		<NoWarn>$(NoWarn);CS1591</NoWarn>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-  </PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Shared.Infrastructure\Shared.Infrastructure.csproj" />
+		<ProjectReference Include="..\..\src\Shared.Abstractions\Shared.Abstractions.csproj" />
+	</ItemGroup>
 
-  <!-- Project Dependencies -->
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Shared.Infrastructure\Shared.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\Shared.Abstractions\Shared.Abstractions.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<!-- Test Runner & SDK (marked as PrivateAssets to prevent leaking into other projects) -->
+		<PackageReference Include="Microsoft.NET.Test.Sdk" PrivateAssets="All" />
+		<PackageReference Include="xunit.runner.visualstudio" PrivateAssets="All" />
 
-  <!-- External Dependencies -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" PrivateAssets="All" />
-    <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="All" />
-    <PackageReference Include="FluentAssertions" />
-  </ItemGroup>
+		<PackageReference Include="xunit" />
+		<PackageReference Include="FluentAssertions" />
+	</ItemGroup>
 
-  <!-- Global Using Statements -->
-  <ItemGroup>
-    <Using Include="Xunit" />
-    <Using Include="FluentAssertions" />
-  </ItemGroup>
-
+	<ItemGroup>
+		<Using Include="Xunit" />
+		<Using Include="FluentAssertions" />
+	</ItemGroup>
 </Project>

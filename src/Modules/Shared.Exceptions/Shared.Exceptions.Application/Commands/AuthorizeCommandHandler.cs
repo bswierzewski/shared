@@ -7,13 +7,13 @@ namespace Shared.Exceptions.Application.Commands;
 /// Handler for RoleProtectedCommand that returns a successful response.
 /// This handler is only reachable if the user has the "admin" role.
 /// </summary>
-public class RoleProtectedCommandHandler : IRequestHandler<RoleProtectedCommand, ErrorOr<string>>
+public class AuthorizeCommandHandler : IRequestHandler<AuthorizeCommand, ErrorOr<string>>
 {
     /// <summary>
     /// Handles the RoleProtectedCommand by returning a successful response.
     /// </summary>
-    public Task<ErrorOr<string>> Handle(RoleProtectedCommand request, CancellationToken cancellationToken)
+    public Task<ErrorOr<string>> Handle(AuthorizeCommand request, CancellationToken cancellationToken)
     {
-        return Task.FromResult<ErrorOr<string>>("Role protected response - user has admin role");
+        return Task.FromResult<ErrorOr<string>>("Permission protected response - user has permissions");
     }
 }

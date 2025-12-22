@@ -1,29 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<PackageId>Shared.Users.Domain</PackageId>
+		<Title>Shared Users Domain Layer</Title>
+		<Description>Domain entities and RBAC logic for the Users module.</Description>
+		<PackageTags>users;domain;rbac;identity</PackageTags>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <RootNamespace>Shared.Users.Domain</RootNamespace>
-
-    <!-- NuGet Metadata -->
-    <PackageId>Shared.Users.Domain</PackageId>
-    <Version>1.0.0</Version>
-    <Title>Shared Users Domain</Title>
-    <Description>Domain entities and interfaces for user management with role-based access control (RBAC).</Description>
-    <Authors>bswierzewski</Authors>
-    <Company>bswierzewski</Company>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/bswierzewski/shared</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>users;domain;rbac;user-management;identity</PackageTags>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared.Abstractions\Shared.Abstractions.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="../README.md" Pack="true" PackagePath="\"/>
-  </ItemGroup>
-
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Shared.Abstractions\Shared.Abstractions.csproj" />
+	</ItemGroup>
 </Project>

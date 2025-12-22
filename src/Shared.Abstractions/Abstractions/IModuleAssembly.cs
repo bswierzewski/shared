@@ -1,4 +1,4 @@
-namespace Shared.Abstractions.Modules;
+namespace Shared.Abstractions.Abstractions;
 
 /// <summary>
 /// Marker interface for module assemblies.

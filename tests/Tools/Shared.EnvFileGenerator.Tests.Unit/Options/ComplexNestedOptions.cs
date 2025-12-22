@@ -1,4 +1,4 @@
-using Shared.Abstractions.Options;
+using Shared.Abstractions.Abstractions;
 
 namespace Shared.EnvFileGenerator.Tests.Unit.Options;
 

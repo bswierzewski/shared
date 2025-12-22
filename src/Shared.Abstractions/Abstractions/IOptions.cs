@@ -1,4 +1,4 @@
-namespace Shared.Abstractions.Options;
+namespace Shared.Abstractions.Abstractions;
 
 /// <summary>
 /// Marker interface for options classes used throughout the application.

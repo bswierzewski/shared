@@ -1,7 +1,4 @@
 <Solution>
-  <Folder Name="/docs/">
-    <File Path="docs/DOTNET_TOOLS.md" />
-  </Folder>
   <Folder Name="/scripts/">
     <File Path="scripts/env-template-generator.ps1" />
     <File Path="scripts/shared_env.txt" />
@@ -12,12 +9,10 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="nuget.config" />
-    <File Path="README.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Host/Shared.Host.csproj" />
     <Project Path="src/Shared.Abstractions/Shared.Abstractions.csproj" />
-    <Project Path="src/Shared.Infrastructure.Generators/Shared.Infrastructure.Generators.csproj" />
     <Project Path="src/Shared.Infrastructure.Tests/Shared.Infrastructure.Tests.csproj" />
     <Project Path="src/Shared.Infrastructure/Shared.Infrastructure.csproj" />
   </Folder>
