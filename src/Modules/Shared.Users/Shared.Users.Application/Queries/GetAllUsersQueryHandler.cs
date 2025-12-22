@@ -43,7 +43,15 @@ internal class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, Error
                         r.IsActive,
                         r.IsModule,
                         r.ModuleName))
-                    .ToList()))
+                    .ToList(),
+                u.Roles
+                    .SelectMany(r => r.Permissions)
+                        .Select(p => new PermissionDto(
+                            p.Name,
+                            p.Description,
+                            p.IsActive,
+                            p.IsModule,
+                            p.ModuleName)).ToList()))
             .ToListAsync(cancellationToken);
 
         return users;

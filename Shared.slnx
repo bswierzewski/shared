@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/scripts/">
+    <File Path="scripts/dotnet.txt" />
     <File Path="scripts/env-template-generator.ps1" />
-    <File Path="scripts/shared_env.txt" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".config/dotnet-tools.json" />

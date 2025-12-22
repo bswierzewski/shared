@@ -1,0 +1,4 @@
+dotnet tool install Shared.EnvFileGenerator --prerelease
+dotnet tool update Shared.EnvFileGenerator --prerelease
+
+dotnet ef migrations add CreateUsersSchema --project src/Modules/Shared.Users/Shared.Users.Infrastructure  --startup-project src/Host --context UsersDbContext

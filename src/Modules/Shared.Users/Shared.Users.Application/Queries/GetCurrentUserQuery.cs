@@ -1,5 +1,6 @@
 using ErrorOr;
 using MediatR;
+using Shared.Abstractions.Authorization;
 using Shared.Users.Application.DTOs;
 
 namespace Shared.Users.Application.Queries;

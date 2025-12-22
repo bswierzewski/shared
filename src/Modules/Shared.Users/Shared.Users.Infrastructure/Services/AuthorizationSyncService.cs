@@ -15,22 +15,14 @@ namespace Shared.Users.Infrastructure.Services;
 /// 2. Sync permissions: Add missing, Activate/Deactivate based on module definitions
 /// 3. Sync roles: Add missing, Activate/Deactivate, Update role permissions
 /// </summary>
-public class RolePermissionSynchronizationService
+/// <remarks>
+/// Initializes a new instance of the RolePermissionSynchronizationService.
+/// </remarks>
+/// <param name="serviceProvider">The service provider for dependency injection.</param>
+public class AuthorizationSyncService(IServiceProvider serviceProvider)
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IEnumerable<IModule> _modules;
-    private readonly ILogger<RolePermissionSynchronizationService> _logger;
-
-    /// <summary>
-    /// Initializes a new instance of the RolePermissionSynchronizationService.
-    /// </summary>
-    /// <param name="serviceProvider">The service provider for dependency injection.</param>
-    public RolePermissionSynchronizationService(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-        _modules = serviceProvider.GetServices<IModule>();
-        _logger = serviceProvider.GetRequiredService<ILogger<RolePermissionSynchronizationService>>();
-    }
+    private readonly IEnumerable<IModule> _modules = serviceProvider.GetServices<IModule>();
+    private readonly ILogger<AuthorizationSyncService> _logger = serviceProvider.GetRequiredService<ILogger<AuthorizationSyncService>>();
 
     /// <summary>
     /// Asynchronously initializes the role and permission synchronization process.
@@ -39,7 +31,7 @@ public class RolePermissionSynchronizationService
     /// <returns>A task representing the asynchronous operation.</returns>
     public async Task InitializeAsync(CancellationToken ct = default)
     {
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IUsersDbContext>();
 
         // Step 1: Sync permissions first (roles depend on permissions)

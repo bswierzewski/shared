@@ -3,6 +3,7 @@
   <ItemGroup>
 	<PackageReference Include="DotNetEnv" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+	<PackageReference Include="Serilog.Enrichers.Span" />
   </ItemGroup>
 
   <ItemGroup>
@@ -10,6 +11,13 @@
     <ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Shared.Users\Shared.Users.Infrastructure\Shared.Users.Infrastructure.csproj" />
 	<ProjectReference Include="..\Modules\Shared.Exceptions\Shared.Exceptions.Infrastructure\Shared.Exceptions.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+	<PrivateAssets>all</PrivateAssets>
+	<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	</PackageReference>
   </ItemGroup>
 
 </Project>

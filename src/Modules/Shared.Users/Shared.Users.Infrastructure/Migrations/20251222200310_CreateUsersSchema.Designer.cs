@@ -12,7 +12,7 @@ using Shared.Users.Infrastructure.Persistence;
 namespace Shared.Users.Infrastructure.Migrations
 {
     [DbContext(typeof(UsersDbContext))]
-    [Migration("20251221062212_CreateUsersSchema")]
+    [Migration("20251222200310_CreateUsersSchema")]
     partial class CreateUsersSchema
     {
         /// <inheritdoc />
@@ -49,7 +49,7 @@ namespace Shared.Users.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Email")
@@ -66,7 +66,7 @@ namespace Shared.Users.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid>("ModifiedBy")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");

@@ -1,32 +1,19 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Shared.Users.Application.Options;
 using Shared.Users.Infrastructure.Consts;
+using System.Security.Claims;
 
-namespace Shared.Users.Infrastructure.Extensions.JwtBearers;
+namespace Shared.Users.Infrastructure.Extensions.Clerk;
 
-/// <summary>
-/// Extension methods for adding Clerk JWT Bearer authentication.
-///
-/// Clerk uses OpenID Connect with JWKS discovery.
-/// Token validation is performed by JwtBearer middleware.
-/// JIT provisioning and claims enrichment are handled by JitProvisioningMiddleware.
-/// </summary>
 public static class ClerkJwtBearerExtensions
 {
     /// <summary>
     /// Adds Clerk JWT Bearer authentication.
     /// Configures JWT validation using OpenID Connect discovery.
-    ///
-    /// JIT provisioning and claims enrichment are handled by JitProvisioningMiddleware,
-    /// which runs after authentication and database lookup of roles/permissions.
     /// </summary>
-    /// <param name="builder">The authentication builder</param>
-    /// <param name="configureOptions">Optional additional JWT Bearer configuration</param>
-    /// <returns>The authentication builder for chaining</returns>
     public static AuthenticationBuilder AddClerkJwtBearer(
         this AuthenticationBuilder builder,
         Action<JwtBearerOptions>? configureOptions = null)
@@ -41,7 +28,7 @@ public static class ClerkJwtBearerExtensions
                 ValidateIssuerSigningKey = true,
                 ValidateIssuer = true,
                 ValidateAudience = false, // May be disabled if not configured
-                ClockSkew = TimeSpan.FromMinutes(2)
+                ClockSkew = TimeSpan.FromMinutes(5)
             };
 
             // Configure events to handle provider-specific claims mapping
@@ -49,30 +36,32 @@ public static class ClerkJwtBearerExtensions
             {
                 OnTokenValidated = context =>
                 {
-                    // Extract claims from JWT token
                     var principal = context.Principal;
                     if (principal?.Identity is not ClaimsIdentity identity)
                     {
+                        context.Fail("Identity is missing.");
                         return Task.CompletedTask;
                     }
 
-                    // Extract standard claims - Clerk provides these consistently
-                    var sub = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? principal.FindFirst("sub")?.Value;
-                    var email = principal.FindFirst(ClaimTypes.Email)?.Value;
-                    var name = principal.FindFirst(ClaimTypes.Name)?.Value ?? principal.FindFirst("name")?.Value;
-
-                    // Add provider identifier claim for JitProvisioningMiddleware
-                    if (!string.IsNullOrEmpty(sub))
+                    // 1. Walidacja SUB (ExternalId)
+                    var sub = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("sub");
+                    if (string.IsNullOrEmpty(sub))
                     {
-                        identity.AddClaim(new Claim(ClaimsConsts.Provider, "Clerk"));
+                        context.Fail("Claim 'sub' is required.");
+                        return Task.CompletedTask;
                     }
 
-                    // Clerk provides picture URL in 'picture' claim
-                    var picture = principal.FindFirst("picture")?.Value;
-                    if (!string.IsNullOrEmpty(picture))
+                    // 2. Walidacja EMAIL
+                    var email = principal.FindFirstValue(ClaimTypes.Email) ?? principal.FindFirstValue("email");
+                    if (string.IsNullOrEmpty(email))
                     {
-                        identity.AddClaim(new Claim(ClaimsConsts.PictureUrl, picture));
+                        context.Fail("Claim 'email' is required.");
+                        return Task.CompletedTask;
                     }
+
+                    identity.AddClaim(new Claim(ClaimsConsts.ExternalId, sub));
+                    identity.AddClaim(new Claim(ClaimsConsts.Email, email));
+                    identity.AddClaim(new Claim(ClaimsConsts.Provider, "Clerk"));
 
                     return Task.CompletedTask;
                 }

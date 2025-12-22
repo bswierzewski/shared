@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using Shared.Abstractions.Abstractions;
 
-namespace Shared.Infrastructure;
+namespace Shared.Infrastructure.Extensions;
 
 /// <summary>
 /// A static utility for generating configuration keys based on IOptions definitions.

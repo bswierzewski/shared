@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -11,8 +12,9 @@ using Shared.Users.Application;
 using Shared.Users.Application.Abstractions;
 using Shared.Users.Application.Options;
 using Shared.Users.Domain;
+using Shared.Users.Infrastructure.ClaimsTransformations;
 using Shared.Users.Infrastructure.Endpoints;
-using Shared.Users.Infrastructure.Middleware;
+using Shared.Users.Infrastructure.Extensions.Supabase;
 using Shared.Users.Infrastructure.Persistence;
 using Shared.Users.Infrastructure.Services;
 
@@ -61,7 +63,7 @@ public partial class UsersModule : IModule
     /// <inheritdoc/>
     public void Register(IServiceCollection services, IConfiguration configuration)
     {
-        // Register HttpContextAccessor (required for IUser implementation to access ClaimsPrincipal)
+        services.AddMemoryCache();
         services.AddHttpContextAccessor();
 
         // Register module services using fluent ModuleBuilder API
@@ -76,8 +78,9 @@ public partial class UsersModule : IModule
             .AddCQRS(typeof(ApplicationAssembly).Assembly, typeof(InfrastructureAssembly).Assembly)
             .Build();
 
-        // Register provisioning service
-        services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+        // Register service
+        services.AddScoped<IUserService, UserService>();
+        services.AddTransient<IClaimsTransformation, AuthorizationClaimsTransformation>();
 
         // Register IUser implementation (reads from enriched ClaimsPrincipal)
         services.AddScoped<IUser, CurrentUserService>();
@@ -89,12 +92,9 @@ public partial class UsersModule : IModule
     /// </summary>
     public void Use(IApplicationBuilder app, IConfiguration configuration)
     {
-        // Add middleware for user provisioning and claims enrichment
-        app.UseMiddleware<UserProvisioningMiddleware>();
-
         // Map user management endpoints
-        if (app is Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpointRouteBuilder)        
-            endpointRouteBuilder.MapUserEndpoints();        
+        if (app is Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpointRouteBuilder)
+            endpointRouteBuilder.MapUserEndpoints();
     }
 
     /// <summary>
@@ -103,6 +103,6 @@ public partial class UsersModule : IModule
     public async Task Initialize(IServiceProvider serviceProvider, CancellationToken cancellationToken = default)
     {
         await new MigrationService<UsersDbContext>(serviceProvider).MigrateAsync(cancellationToken);
-        await new RolePermissionSynchronizationService(serviceProvider).InitializeAsync(cancellationToken);
+        await new AuthorizationSyncService(serviceProvider).InitializeAsync(cancellationToken);
     }
 }

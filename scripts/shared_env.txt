@@ -1,2 +1,0 @@
-dotnet tool install Shared.EnvFileGenerator --prerelease
-dotnet tool update Shared.EnvFileGenerator --prerelease

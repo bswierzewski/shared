@@ -9,7 +9,8 @@ public record UserDto(
     bool IsActive,
     DateTimeOffset? LastLoginAt,
     IReadOnlyCollection<ExternalProviderDto> ExternalProviders,
-    IReadOnlyCollection<RoleDto> Roles);
+    IReadOnlyCollection<RoleDto> Roles,
+    IReadOnlyCollection<PermissionDto> Permissions);
 
 /// <summary>
 /// Data Transfer Object for ExternalProvider

@@ -7,19 +7,12 @@ namespace Shared.Users.Application.Commands;
 /// <summary>
 /// Handler for assigning one or more roles to a user
 /// </summary>
-internal class AssignRoleToUserCommandHandler : IRequestHandler<AssignRoleToUserCommand>
+internal class AssignRoleToUserCommandHandler(IUsersDbContext context) : IRequestHandler<AssignRoleToUserCommand>
 {
-    private readonly IUsersDbContext _context;
-
-    public AssignRoleToUserCommandHandler(IUsersDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task Handle(AssignRoleToUserCommand request, CancellationToken cancellationToken)
     {
         // Load user with roles navigation property
-        var user = await _context.Users
+        var user = await context.Users
             .Include(u => u.Roles)
             .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
@@ -27,7 +20,7 @@ internal class AssignRoleToUserCommandHandler : IRequestHandler<AssignRoleToUser
             throw new InvalidOperationException($"User {request.UserId} not found");
 
         // Load all requested roles by Names
-        var roles = await _context.Roles
+        var roles = await context.Roles
             .Where(r => request.RoleIds.Contains(r.Name))
             .ToListAsync(cancellationToken);
 
@@ -42,6 +35,6 @@ internal class AssignRoleToUserCommandHandler : IRequestHandler<AssignRoleToUser
         foreach (var role in roles)        
             user.AssignRole(role);        
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -38,11 +38,20 @@ internal class GetCurrentUserQueryHandler(IUsersDbContext context, IUser user) :
                         r.IsActive,
                         r.IsModule,
                         r.ModuleName))
-                    .ToList()))
+                    .ToList(),
+                u.Roles
+                    .SelectMany(r => r.Permissions)
+                        .Select(p => new PermissionDto(
+                            p.Name,
+                            p.Description,
+                            p.IsActive,
+                            p.IsModule,
+                            p.ModuleName)).ToList())
+            )
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (userDto == null)        
-            return Error.NotFound("User.NotFound", "User not found");        
+        if (userDto == null)
+            return Error.NotFound("User.NotFound", "User not found");
 
         return userDto;
     }

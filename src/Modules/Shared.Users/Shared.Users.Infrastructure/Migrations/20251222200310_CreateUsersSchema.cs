@@ -52,9 +52,9 @@ namespace Shared.Users.Infrastructure.Migrations
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     LastLoginAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     ModifiedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedBy = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {

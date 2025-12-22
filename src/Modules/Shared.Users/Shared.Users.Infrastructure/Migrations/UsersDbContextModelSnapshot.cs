@@ -46,7 +46,7 @@ namespace Shared.Users.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedBy")
+                    b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Email")
@@ -63,7 +63,7 @@ namespace Shared.Users.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedBy")
+                    b.Property<Guid>("ModifiedBy")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");

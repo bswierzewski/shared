@@ -7,19 +7,12 @@ namespace Shared.Users.Application.Commands;
 /// <summary>
 /// Handler for removing a role from a user
 /// </summary>
-internal class RemoveRoleFromUserCommandHandler : IRequestHandler<RemoveRoleFromUserCommand>
+internal class RemoveRoleFromUserCommandHandler(IUsersDbContext context) : IRequestHandler<RemoveRoleFromUserCommand>
 {
-    private readonly IUsersDbContext _context;
-
-    public RemoveRoleFromUserCommandHandler(IUsersDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task Handle(RemoveRoleFromUserCommand request, CancellationToken cancellationToken)
     {
         // Load user with roles navigation property
-        var user = await _context.Users
+        var user = await context.Users
             .Include(u => u.Roles)
             .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
@@ -27,7 +20,7 @@ internal class RemoveRoleFromUserCommandHandler : IRequestHandler<RemoveRoleFrom
             throw new InvalidOperationException($"User {request.UserId} not found");
 
         // Find the role by Name
-        var role = await _context.Roles
+        var role = await context.Roles
             .FirstOrDefaultAsync(r => r.Name == request.RoleId, cancellationToken);
 
         // If role doesn't exist, operation is idempotent (no-op)
@@ -36,6 +29,6 @@ internal class RemoveRoleFromUserCommandHandler : IRequestHandler<RemoveRoleFrom
 
         // Remove role from user
         user.RemoveRole(role);
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

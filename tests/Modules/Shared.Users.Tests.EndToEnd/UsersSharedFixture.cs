@@ -1,7 +1,7 @@
 using Shared.Infrastructure.Tests.Authentication;
 using Shared.Infrastructure.Tests.Infrastructure.Containers;
 
-namespace Shared.Users.Tests;
+namespace Shared.Users.Tests.EndToEnd;
 
 /// <summary>
 /// Shared test fixture for Users module integration tests.

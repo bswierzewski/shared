@@ -1,4 +1,4 @@
-using ErrorOr;
+﻿using ErrorOr;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Shared.Abstractions.Abstractions;
@@ -51,23 +51,37 @@ public sealed class AuthorizationBehavior<TRequest, TResponse>(
         // Check authorization requirements
         foreach (var attribute in authorizeAttributes)
         {
-            // Check required permissions (AND logic - user needs all)
-            if (attribute.Permissions.Length == 0)
-                return await next(cancellationToken);
+            foreach (var permission in attribute.Permissions)
+            {
+                if (!_user.HasPermission(permission))
+                {
+                    _logger.LogWarning(
+                        "Authorization failed for user {UserId} on request {RequestName}: User does not have the required permission: {Permission}",
+                        _user.Id.ToString(),
+                        typeof(TRequest).Name,
+                        permission);
 
-            //foreach (var permission in attribute.Permissions)
-            //{
-            //    if (!_user.HasPermission(permission))
-            //    {
-            //        _logger.LogWarning(
-            //            "Authorization failed for user {UserId} on request {RequestName}: User does not have the required permission: {Permission}",
-            //            _user.Id?.ToString() ?? "Unknown",
-            //            typeof(TRequest).Name,
-            //            permission);
+                    return (dynamic)Error.Forbidden(
+                        code: "Auth.Forbidden", 
+                        description: $"User does not have the required permission: {permission}");
+                }
+            }
 
-            //        return (dynamic)Error.Forbidden(code: "Auth.Forbidden", description: $"User does not have the required permission: {permission}");
-            //    }
-            //}
+            foreach (var role in attribute.Roles)
+            {
+                if (!_user.IsInRole(role))
+                {
+                    _logger.LogWarning(
+                        "Authorization failed for user {UserId} on request {RequestName}: User is not in the required role: {Role}",
+                        _user.Id,
+                        typeof(TRequest).Name,
+                        role);
+
+                    return (dynamic)Error.Forbidden(
+                        code: "Auth.Forbidden",
+                        description: $"User is not in the required role: {role}");
+                }
+            }
         }
 
         // Authorization passed, continue to next behavior

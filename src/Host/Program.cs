@@ -6,23 +6,18 @@ using Shared.Users.Infrastructure;
 using Shared.Users.Infrastructure.Extensions.Supabase;
 
 // Load environment variables from .env file BEFORE creating builder
-// clobberExistingVars: false ensures Docker/CI/CD environment variables take precedence
 if (File.Exists(".env"))
     Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog - all settings in appsettings.json
 builder.AddSerilog();
 
-// Exception handling
 builder.Services.AddProblemDetails(options =>
     options.AddCustomConfiguration(builder.Environment));
 
-// OpenAPI/Swagger with enhanced ProblemDetails schemas
 builder.Services.AddOpenApi(options => options.AddProblemDetailsSchemas());
 
-// Register modules from auto-generated registry
 builder.Services.RegisterModules(builder.Configuration,
     new UsersModule(),
     new ExceptionsModule()
@@ -30,6 +25,7 @@ builder.Services.RegisterModules(builder.Configuration,
 
 builder.Services.AddAuthentication()
     .AddSupabaseJwtBearer();
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
@@ -41,20 +37,15 @@ app.UseExceptionHandler();
 app.UseSerilogRequestLogging();
 
 app.UseAuthentication();
-
-// Use all modules (automatic middleware & endpoint configuration)
-// IMPORTANT: Must be BEFORE UseAuthorization() because UserProvisioningMiddleware
-// enriches ClaimsPrincipal with roles and permissions
-app.UseModules(builder.Configuration);
-
 app.UseAuthorization();
+
+app.UseModules(builder.Configuration);
 
 // Map OpenAPI endpoint - available at /openapi/v1.json
 app.MapOpenApi();
 
 // Initialize all modules (migrations, seeding, etc.)
 await app.Services.InitModules();
-
 await app.RunAsync();
 
 public partial class Program { }
